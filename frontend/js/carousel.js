@@ -20,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentIndex = index;
     }
 
-    // Auto-play every 5 seconds
+    // Auto-play every 3 seconds
     const autoPlay = setInterval(() => {
         showSlide((currentIndex + 1) % total);
-    }, 5000);
+    }, 3000);
 
     // Dot click navigation
     dots.forEach(dot => {
