@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vérification de Tickets - Plate-Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f0f3ff",
+                        "outline-variant": "#c5c5d5",
+                        "secondary-fixed": "#ffdad7",
+                        "on-tertiary-fixed": "#191c1e",
+                        "on-tertiary-container": "#999c9f",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#44474a",
+                        "error-container": "#ffdad6",
+                        "on-background": "#111c2c",
+                        "surface-container": "#e7eeff",
+                        "surface-tint": "#3e54c1",
+                        "primary-container": "#002395",
+                        "on-secondary-container": "#fffbff",
+                        "tertiary-fixed": "#e0e3e6",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#410005",
+                        "inverse-on-surface": "#ebf1ff",
+                        "tertiary": "#1c1f21",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#223aa8",
+                        "background": "#f9f9ff",
+                        "surface-container-highest": "#d8e3fa",
+                        "secondary": "#bb0021",
+                        "on-surface-variant": "#444653",
+                        "on-secondary": "#ffffff",
+                        "primary": "#001360",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#313437",
+                        "on-primary-container": "#8094ff",
+                        "on-surface": "#111c2c",
+                        "secondary-container": "#e32033",
+                        "on-secondary-fixed-variant": "#930018",
+                        "surface-bright": "#f9f9ff",
+                        "surface-container-high": "#dee8ff",
+                        "surface": "#f9f9ff",
+                        "on-primary-fixed": "#001159",
+                        "surface-variant": "#d8e3fa",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c4c7ca",
+                        "secondary-fixed-dim": "#ffb3af",
+                        "inverse-surface": "#263142",
+                        "surface-dim": "#cfdaf1",
+                        "primary-fixed-dim": "#bac3ff",
+                        "inverse-primary": "#bac3ff",
+                        "outline": "#757684",
+                        "primary-fixed": "#dee1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1200px",
+                        "margin-desktop": "48px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .security-shadow {
+            box-shadow: 0 4px 20px rgba(17, 28, 44, 0.06);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface w-full top-0 sticky border-b border-outline-variant shadow-sm z-50">
+<div class="flex items-center justify-between px-margin-desktop max-w-container-max mx-auto h-20 md:px-margin-desktop px-margin-mobile">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">Plate-Verification</span>
+</div>
+<nav class="hidden md:flex gap-8 h-full items-center">
+<!-- TopNav items omitted as per semantic shell mandate for transactional pages, but keeping header structure -->
+</nav>
+<div class="flex items-center gap-3">
+<div class="w-8 h-5 flex flex-col rounded overflow-hidden border border-outline-variant">
+<div class="flex-1 bg-blue-600"></div>
+<div class="flex-1 bg-white"></div>
+<div class="flex-1 bg-red-600"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest hidden sm:inline">Portail Officiel</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center py-12 px-margin-mobile md:px-margin-desktop">
+<div class="w-full max-w-[600px] bg-surface-container-lowest rounded-xl security-shadow border border-outline-variant p-8 md:p-12 relative overflow-hidden">
+<!-- Decorative accent -->
+<div class="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+<div class="mb-10 text-center">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Vérification de Tickets</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Saisissez les informations requises pour valider l'authenticité de vos documents.</p>
+</div>
+<form class="space-y-8">
+<!-- Email Input -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-2" for="email">Adresse E-mail</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors" id="email" placeholder="votre@email.fr" required="" type="email"/>
+</div>
+</div>
+<!-- Tickets Section -->
+<div class="space-y-4">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface">Codes des Tickets</h2>
+<span class="bg-surface-container-high text-primary px-3 py-1 rounded-full font-label-sm text-label-sm">Sécurisé</span>
+</div>
+<div class="space-y-4" id="tickets-container">
+<!-- Ticket 1 -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-1">Ticket #1</label>
+<input class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-display text-[24px] tracking-[0.2em] text-center text-primary uppercase placeholder:text-outline-variant placeholder:font-body-md placeholder:tracking-normal placeholder:text-base transition-colors" id="ticket-1" placeholder="XXXX-XXXX-XXXX" required="" type="text"/>
+</div>
+<!-- Ticket 2 -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-2">Ticket #2</label>
+<input class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-display text-[24px] tracking-[0.2em] text-center text-primary uppercase placeholder:text-outline-variant placeholder:font-body-md placeholder:tracking-normal placeholder:text-base transition-colors" id="ticket-2" placeholder="XXXX-XXXX-XXXX" type="text"/>
+</div>
+<!-- Ticket 3 -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-3">Ticket #3</label>
+<input class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-display text-[24px] tracking-[0.2em] text-center text-primary uppercase placeholder:text-outline-variant placeholder:font-body-md placeholder:tracking-normal placeholder:text-base transition-colors" id="ticket-3" placeholder="XXXX-XXXX-XXXX" type="text"/>
+</div>
+<!-- Ticket 4 -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-4">Ticket #4</label>
+<input class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-display text-[24px] tracking-[0.2em] text-center text-primary uppercase placeholder:text-outline-variant placeholder:font-body-md placeholder:tracking-normal placeholder:text-base transition-colors" id="ticket-4" placeholder="XXXX-XXXX-XXXX" type="text"/>
+</div>
+</div>
+<button class="flex items-center gap-2 text-primary font-label-md text-label-md hover:text-primary-container transition-colors py-2" type="button">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                        Ajouter un ticket
+                    </button>
+</div>
+<!-- Security Notice -->
+<div class="bg-surface-container p-4 rounded-lg flex items-start gap-3 border border-surface-container-highest">
+<span class="material-symbols-outlined text-primary mt-0.5">info</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">
+                        Cette connexion est chiffrée de bout en bout. Les informations soumises sont traitées conformément aux directives gouvernementales sur la protection des données.
+                    </p>
+</div>
+<!-- CTA -->
+<div class="pt-4 border-t border-outline-variant">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-4 rounded-lg flex justify-center items-center gap-2 shadow-sm transition-all duration-200 border-t border-white/20 active:scale-[0.98]" type="submit">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified</span>
+                        Vérifier maintenant
+                    </button>
+</div>
+</form>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest w-full mt-auto border-t border-outline-variant">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-mobile md:px-margin-desktop py-12 max-w-container-max mx-auto">
+<div class="flex flex-col gap-2">
+<span class="font-label-md text-label-md font-bold text-primary">Plate-Verification</span>
+<span class="font-label-md text-label-md text-on-surface-variant">© 2024 Plate-Verification - République Française</span>
+</div>
+<div class="flex flex-wrap gap-x-6 gap-y-3 md:justify-end items-center">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Mentions Légales</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Données Personnelles</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Accessibilité</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">CGU</a>
+</div>
+</div>
+</footer>
+</body></html>

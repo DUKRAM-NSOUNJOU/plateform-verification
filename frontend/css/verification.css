@@ -1,0 +1,59 @@
+/* ==============================================
+   VERIFICATION.CSS — Page de vérification
+   ============================================== */
+
+/* Card shadow */
+.security-shadow {
+    box-shadow: 0 4px 20px rgba(17, 28, 44, 0.06);
+}
+
+/* Body min-height */
+body {
+    min-height: max(884px, 100dvh);
+}
+
+/* Ticket inputs — grands et bien espacés */
+.ticket-input {
+    font-size: 24px;
+    letter-spacing: 0.2em;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Inter', monospace;
+}
+
+.ticket-input::placeholder {
+    font-size: 16px;
+    letter-spacing: normal;
+    text-transform: none;
+    color: #c5c5d5;
+}
+
+/* Submit button press effect */
+.btn-submit:active {
+    transform: scale(0.98);
+}
+
+/* Add ticket button */
+.btn-add-ticket {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #001360;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 8px 0;
+    transition: opacity 0.2s;
+}
+.btn-add-ticket:hover { opacity: 0.75; }
+
+/* Ticket row entry animation */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.ticket-row-new {
+    animation: slideDown 0.25s ease-out;
+}

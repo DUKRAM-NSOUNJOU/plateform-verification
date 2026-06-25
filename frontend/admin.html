@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard Administration - Platform-Verification</title>
+<meta name="description" content="Espace d'administration et de validation des tickets Platform-Verification."/>
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="js/tailwind.config.js"></script>
+<link rel="stylesheet" href="css/shared.css"/>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden font-body-md">
+
+<!-- ── Sidebar ────────────────────────────────────────── -->
+<aside class="h-full w-80 fixed left-0 top-0 hidden md:flex flex-col py-6 bg-surface-container shadow-lg z-20">
+  <div class="px-6 mb-8 flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">admin_panel_settings</span>
+    </div>
+    <div>
+      <h2 class="font-headline-md text-headline-md text-primary">Administration</h2>
+      <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mt-1">Session Sécurisée</p>
+      <p class="font-label-sm text-label-sm text-outline mt-0.5">V.1.0.2</p>
+    </div>
+  </div>
+  <nav class="flex-1 px-4 space-y-2">
+    <a class="bg-primary text-on-primary rounded-lg mx-2 my-1 flex items-center px-4 py-3 font-label-md text-label-md" href="#">
+      <span class="material-symbols-outlined mr-3" style="font-variation-settings:'FILL' 1;">dashboard</span>Tableau de bord
+    </a>
+    <a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 my-1 flex items-center px-4 py-3 font-label-md text-label-md transition-all" href="verification.html">
+      <span class="material-symbols-outlined mr-3">verified_user</span>Vérification manuelle
+    </a>
+    <a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 my-1 flex items-center px-4 py-3 font-label-md text-label-md transition-all" href="#">
+      <span class="material-symbols-outlined mr-3">history</span>Historique
+    </a>
+    <a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg mx-2 my-1 flex items-center px-4 py-3 font-label-md text-label-md transition-all" href="#">
+      <span class="material-symbols-outlined mr-3">settings</span>Paramètres
+    </a>
+  </nav>
+  <div class="flag-fr px-6 mt-8 ml-6">
+    <div class="bleu"></div>
+    <div class="blanc"></div>
+    <div class="rouge"></div>
+  </div>
+</aside>
+
+<!-- ── Main Content ───────────────────────────────────── -->
+<div class="flex-1 flex flex-col md:ml-80 h-screen">
+
+  <!-- Header -->
+  <header class="w-full top-0 sticky bg-surface border-b border-outline-variant shadow-sm z-10">
+    <div class="flex items-center justify-between px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto h-20">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings:'FILL' 1;">security</span>
+        <h1 class="font-headline-md text-headline-md font-bold text-primary">Platform-Verification</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="text-on-surface-variant hover:text-secondary font-label-md text-label-md transition-colors hidden sm:block">← Retour accueil</a>
+        <button class="md:hidden text-on-surface-variant"><span class="material-symbols-outlined">menu</span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="flex-1 overflow-y-auto w-full bg-background">
+    <div class="px-margin-mobile md:px-margin-desktop pt-8 pb-28 md:py-12 max-w-container-max mx-auto">
+
+      <div class="mb-10">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Bonjour, Jemil</h1>
+        <p class="font-body-md text-body-md text-on-surface-variant">Espace d'administration et de validation des identités numériques.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-outline-variant mb-8 overflow-x-auto">
+        <button class="tab-btn active" data-tab="analytics">Analytiques</button>
+        <button class="tab-btn" data-tab="recus">Codes Reçus</button>
+        <button class="tab-btn" data-tab="valides">Tickets Valides</button>
+        <button class="tab-btn" data-tab="invalides">Tickets Invalides</button>
+        <button class="tab-btn" data-tab="historique">Historique</button>
+      </div>
+
+      <!-- Tab: Analytiques -->
+      <div class="tab-panel active" id="tab-analytics">
+        <!-- Metric Highlights -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
+          <div class="bg-surface p-6 rounded-xl border-l-4 border-primary security-shadow border border-outline-variant">
+            <p class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-1">Total Verified</p>
+            <div class="flex items-baseline gap-2">
+              <h3 class="font-display text-headline-md text-primary">12,842</h3>
+              <span class="text-green-600 font-label-sm text-label-sm flex items-center">
+                <span class="material-symbols-outlined text-[14px]">trending_up</span> 12%
+              </span>
+            </div>
+          </div>
+          <div class="bg-surface p-6 rounded-xl border-l-4 border-secondary security-shadow border border-outline-variant">
+            <p class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-1">Flagged Issues</p>
+            <div class="flex items-baseline gap-2">
+              <h3 class="font-display text-headline-md text-primary">243</h3>
+              <span class="text-red-600 font-label-sm text-label-sm flex items-center">
+                <span class="material-symbols-outlined text-[14px]">trending_down</span> 4%
+              </span>
+            </div>
+          </div>
+          <div class="bg-surface p-6 rounded-xl border-l-4 border-outline security-shadow border border-outline-variant">
+            <p class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-1">Avg. Latency</p>
+            <div class="flex items-baseline gap-2">
+              <h3 class="font-display text-headline-md text-primary">0.8s</h3>
+              <span class="text-on-surface-variant font-label-sm text-label-sm">Stable</span>
+            </div>
+          </div>
+          <div class="bg-surface p-6 rounded-xl border-l-4 border-primary-container security-shadow border border-outline-variant">
+            <p class="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider mb-1">Active Nodes</p>
+            <div class="flex items-baseline gap-2">
+              <h3 class="font-display text-headline-md text-primary">18</h3>
+              <span class="text-green-600 font-label-sm text-label-sm">Optimal</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-grid mb-8">
+          <!-- Submission Activity -->
+          <div class="col-span-12 lg:col-span-8 bg-surface p-8 rounded-xl border border-outline-variant security-shadow relative overflow-hidden">
+            <div class="flex justify-between items-center mb-8">
+              <h2 class="font-headline-md text-headline-md text-primary">Submission Activity</h2>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full bg-primary"></div>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Verified</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full bg-secondary"></div>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Rejected</span>
+                </div>
+              </div>
+            </div>
+            <!-- Mock SVG Line Chart -->
+            <div class="w-full h-64 bg-surface-container-low rounded-lg relative flex items-end px-4 py-8">
+              <svg class="w-full h-full overflow-visible" viewbox="0 0 800 200">
+                <line stroke="#E2E8F0" stroke-width="1" x1="0" x2="800" y1="0" y2="0"></line>
+                <line stroke="#E2E8F0" stroke-width="1" x1="0" x2="800" y1="100" y2="100"></line>
+                <line stroke="#E2E8F0" stroke-width="1" x1="0" x2="800" y1="200" y2="200"></line>
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#001360" stop-opacity="0.1"></stop>
+                    <stop offset="100%" stop-color="#001360" stop-opacity="0"></stop>
+                  </linearGradient>
+                </defs>
+                <path d="M0,150 Q100,50 200,120 T400,80 T600,160 T800,40 L800,200 L0,200 Z" fill="url(#chartGradient)"></path>
+                <path class="chart-line" d="M0,150 Q100,50 200,120 T400,80 T600,160 T800,40" fill="none" stroke="#001360" stroke-width="3"></path>
+                <circle cx="200" cy="120" fill="#001360" r="4" stroke="#fff" stroke-width="2"></circle>
+                <circle cx="400" cy="80" fill="#001360" r="4" stroke="#fff" stroke-width="2"></circle>
+                <circle cx="600" cy="160" fill="#001360" r="4" stroke="#fff" stroke-width="2"></circle>
+              </svg>
+              <div class="absolute bottom-1 left-4 right-4 flex justify-between text-[10px] text-on-surface-variant font-medium">
+                <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Efficiency Score -->
+          <div class="col-span-12 lg:col-span-4 bg-primary text-white p-8 rounded-xl security-shadow border border-primary relative">
+            <h2 class="font-headline-md text-headline-md mb-6">Efficiency Score</h2>
+            <div class="flex items-center justify-center mb-8">
+              <div class="relative w-40 h-40">
+                <svg class="w-full h-full" viewbox="0 0 100 100">
+                  <circle cx="50" cy="50" fill="none" r="45" stroke="rgba(255,255,255,0.1)" stroke-width="10"></circle>
+                  <circle cx="50" cy="50" fill="none" r="45" stroke="white" stroke-dasharray="283" stroke-dashoffset="30" stroke-linecap="round" stroke-width="10"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-4xl font-bold">94%</span>
+                  <span class="text-xs opacity-70">Success Rate</span>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div class="flex justify-between items-center text-sm">
+                <span class="opacity-70">AI Confidence</span>
+                <span class="font-semibold">98.2%</span>
+              </div>
+              <div class="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                <div class="bg-white h-full w-[98%]"></div>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="opacity-70">Manual Reviews</span>
+                <span class="font-semibold">1.8%</span>
+              </div>
+              <div class="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                <div class="bg-white h-full w-[2%]"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Geolocation Map -->
+          <div class="col-span-12 lg:col-span-7 bg-surface p-8 rounded-xl border border-outline-variant security-shadow h-[450px] relative">
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h2 class="font-headline-md text-headline-md text-primary">Geographic Clusters</h2>
+                <p class="text-on-surface-variant font-label-sm text-label-sm">High-density verification regions</p>
+              </div>
+              <span class="material-symbols-outlined text-primary-container">map</span>
+            </div>
+            <div class="w-full h-[320px] rounded-lg overflow-hidden border border-outline-variant bg-surface-container relative">
+              <div class="absolute inset-0 bg-cover bg-center opacity-40 grayscale" data-location="Paris, France" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBK0dMNMdTb41xtvIr8JA_jSaoTUNcJQVimxedBmqOwXPO2uHJzw7DvbFWU7gj_urTWrV-yPh-hR7RLMxgPRv5TyFoCRx2lHXTeAr6zK3_0AiY8ZYVIVF6tDyJ3noNL2AAIhnrOkCw34S1N4-_BRebZHDysLAFPCh_j02wMHtA_VvO0VxX1Lu0W5n6y9guA-fOua07XLM1P0ymYIkqYq9Jq5d6uwmOX6z2My-5vAFurJ_sgZGFaWTeEIQ')"></div>
+              <div class="absolute top-1/4 left-1/3 group">
+                <div class="w-4 h-4 bg-primary rounded-full animate-ping absolute"></div>
+                <div class="w-4 h-4 bg-primary rounded-full relative border-2 border-white"></div>
+                <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Paris Centre: 1.2k units</div>
+              </div>
+              <div class="absolute top-1/2 left-2/3 group">
+                <div class="w-4 h-4 bg-secondary rounded-full animate-ping absolute"></div>
+                <div class="w-4 h-4 bg-secondary rounded-full relative border-2 border-white"></div>
+                <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Nanterre: High Alert</div>
+              </div>
+              <div class="absolute bottom-1/4 left-1/2 group">
+                <div class="w-4 h-4 bg-primary rounded-full relative border-2 border-white"></div>
+                <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Ivry-sur-Seine: 840 units</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Distribution (Tickets Brand) -->
+          <div class="col-span-12 lg:col-span-5 bg-surface p-8 rounded-xl border border-outline-variant security-shadow h-[450px]">
+            <h2 class="font-headline-md text-headline-md text-primary mb-8">Category Distribution</h2>
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <div class="flex justify-between text-label-md font-label-md">
+                  <span>Paysafecard</span>
+                  <span class="text-primary font-bold">45%</span>
+                </div>
+                <div class="w-full bg-surface-container h-4 rounded-full overflow-hidden">
+                  <div class="bg-primary h-full w-[45%] transition-all duration-1000"></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-label-md font-label-md">
+                  <span>Transcash</span>
+                  <span class="text-primary font-bold">30%</span>
+                </div>
+                <div class="w-full bg-surface-container h-4 rounded-full overflow-hidden">
+                  <div class="bg-primary h-full w-[30%] transition-all duration-1000"></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-label-md font-label-md">
+                  <span>PCS</span>
+                  <span class="text-primary font-bold">15%</span>
+                </div>
+                <div class="w-full bg-surface-container h-4 rounded-full overflow-hidden">
+                  <div class="bg-primary h-full w-[15%] transition-all duration-1000"></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-label-md font-label-md">
+                  <span>Neosurf</span>
+                  <span class="text-primary font-bold">10%</span>
+                </div>
+                <div class="w-full bg-surface-container h-4 rounded-full overflow-hidden">
+                  <div class="bg-primary h-full w-[10%] transition-all duration-1000"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Health Footer -->
+        <section class="bg-surface-container p-6 rounded-xl border border-outline-variant flex flex-wrap gap-8 justify-between items-center mb-8">
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">API Gateway: Online</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">DB Master: 12ms</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Auth Svc: 99.9% Uptime</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tab: Codes Reçus -->
+      <div class="tab-panel" id="tab-recus">
+        <div class="flex justify-between items-end mb-6">
+          <h2 class="font-headline-md text-headline-md text-on-surface">Codes Reçus pour Vérification</h2>
+          <span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full" id="pending-count">3 tickets en attente</span>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-gutter" id="users-grid">
+
+          <!-- User Card 1 -->
+          <div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col" data-email="jean.dupont@entreprise.fr">
+            <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-outline">mail</span>
+                <h3 class="font-label-md text-label-md text-on-surface font-semibold">jean.dupont@entreprise.fr</h3>
+              </div>
+              <span class="font-label-sm text-label-sm text-outline-variant">Il y a 5 min</span>
+            </div>
+            <div class="p-6 flex-1 flex flex-col gap-4 user-card-body">
+              <div class="code-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono">A7X-92B-441</div>
+                <div class="flex gap-2">
+                  <button class="btn-validate flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>Valider
+                  </button>
+                  <button class="btn-invalidate flex items-center gap-2 px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">cancel</span>Invalider
+                  </button>
+                </div>
+              </div>
+              <div class="code-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono">B22-88C-190</div>
+                <div class="flex gap-2">
+                  <button class="btn-validate flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>Valider
+                  </button>
+                  <button class="btn-invalidate flex items-center gap-2 px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">cancel</span>Invalider
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Card 2 -->
+          <div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col" data-email="marie.curie@lab.fr">
+            <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-outline">mail</span>
+                <h3 class="font-label-md text-label-md text-on-surface font-semibold">marie.curie@lab.fr</h3>
+              </div>
+              <span class="font-label-sm text-label-sm text-outline-variant">Il y a 12 min</span>
+            </div>
+            <div class="p-6 flex-1 flex flex-col gap-4 user-card-body">
+              <div class="code-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono">RAD-314-159</div>
+                <div class="flex gap-2">
+                  <button class="btn-validate flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>Valider
+                  </button>
+                  <button class="btn-invalidate flex items-center gap-2 px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">cancel</span>Invalider
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Card 3 -->
+          <div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col" data-email="pierre.martin@societe.fr">
+            <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-outline">mail</span>
+                <h3 class="font-label-md text-label-md text-on-surface font-semibold">pierre.martin@societe.fr</h3>
+              </div>
+              <span class="font-label-sm text-label-sm text-outline-variant">Il y a 28 min</span>
+            </div>
+            <div class="p-6 flex-1 flex flex-col gap-4 user-card-body">
+              <div class="code-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono">PCS-771-002</div>
+                <div class="flex gap-2">
+                  <button class="btn-validate flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>Valider
+                  </button>
+                  <button class="btn-invalidate flex items-center gap-2 px-4 py-2 rounded-lg bg-error text-on-error font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:18px;">cancel</span>Invalider
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- end tab-recus -->
+
+      <!-- Tab: Valides -->
+      <div class="tab-panel" id="tab-valides">
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-6">Tickets Valides</h2>
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden" id="valides-list">
+          <div class="empty-state">Aucun ticket validé pour le moment.</div>
+        </div>
+      </div>
+
+      <!-- Tab: Invalides -->
+      <div class="tab-panel" id="tab-invalides">
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-6">Tickets Invalides</h2>
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden" id="invalides-list">
+          <div class="empty-state">Aucun ticket invalidé pour le moment.</div>
+        </div>
+      </div>
+
+      <!-- Tab: Historique -->
+      <div class="tab-panel" id="tab-historique">
+        <h2 class="font-headline-md text-headline-md text-on-surface mb-6">Historique des Actions</h2>
+        <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden" id="historique-list">
+          <div class="empty-state">Aucune action enregistrée.</div>
+        </div>
+      </div>
+
+      <!-- Footer (Déplacé ici pour défiler naturellement et éviter de masquer le contenu) -->
+      <footer class="w-full mt-12 bg-surface-container-lowest border-t border-outline-variant">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-desktop py-12 max-w-container-max mx-auto">
+          <div>
+            <p class="font-label-md text-label-md text-on-surface-variant">© 2024 Platform-Verification - République Française</p>
+          </div>
+          <div class="flex flex-wrap gap-4 md:justify-end">
+            <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Mentions Légales</a>
+            <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Données Personnelles</a>
+            <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Accessibilité</a>
+            <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">CGU</a>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  </main>
+</div>
+
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-2 bg-surface-container border-t border-outline-variant shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)]">
+  <button class="mobile-tab-btn flex flex-col items-center justify-center text-primary font-label-sm text-xs py-1 active" data-tab="analytics">
+    <span class="material-symbols-outlined">analytics</span>
+    <span>Analytiques</span>
+  </button>
+  <button class="mobile-tab-btn flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-xs py-1" data-tab="recus">
+    <span class="material-symbols-outlined">mail</span>
+    <span>Reçus</span>
+  </button>
+  <button class="mobile-tab-btn flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-xs py-1" data-tab="valides">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>Valides</span>
+  </button>
+  <button class="mobile-tab-btn flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-xs py-1" data-tab="invalides">
+    <span class="material-symbols-outlined">cancel</span>
+    <span>Invalides</span>
+  </button>
+  <button class="mobile-tab-btn flex flex-col items-center justify-center text-on-surface-variant font-label-sm text-xs py-1" data-tab="historique">
+    <span class="material-symbols-outlined">history</span>
+    <span>Historique</span>
+  </button>
+</nav>
+
+<script src="js/admin.js"></script>
+</body>
+</html>

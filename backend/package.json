@@ -1,0 +1,12 @@
+{
+  "name": "plate-verification-backend-root",
+  "version": "1.0.0",
+  "description": "Orchestrateur local pour l'architecture microservices",
+  "main": "server.js",
+  "scripts": {
+    "postinstall": "npm install --prefix api-gateway && npm install --prefix ticket-service && npm install --prefix admin-service",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "private": true
+}

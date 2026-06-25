@@ -1,0 +1,42 @@
+/* ==============================================
+   SHARED STYLES — Plate-Verification
+   Thème : République Numérique
+   ============================================== */
+
+/* Base */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9f9ff;
+    color: #111c2c;
+}
+
+/* Material Symbols */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined.fill {
+    font-variation-settings: 'FILL' 1;
+}
+
+/* Shadows */
+.shadow-security {
+    box-shadow: 0 4px 20px rgba(0, 19, 96, 0.06);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: #c5c5d5; border-radius: 4px; }
+
+/* French flag helper */
+.flag-fr {
+    display: flex;
+    height: 4px;
+    width: 48px;
+    border-radius: 2px;
+    overflow: hidden;
+    opacity: 0.8;
+}
+.flag-fr .bleu  { flex: 1; background-color: #002395; }
+.flag-fr .blanc { flex: 1; background-color: #ffffff; }
+.flag-fr .rouge { flex: 1; background-color: #ED2939; }

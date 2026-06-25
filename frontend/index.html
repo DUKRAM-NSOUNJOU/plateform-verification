@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html class="light" lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Platform-Verification - Accueil</title>
+<meta name="description" content="La meilleure plateforme de vérification de tickets en France. Plus de 7000+ utilisateurs nous font confiance."/>
+
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script src="js/tailwind.config.js"></script>
+<!-- Styles -->
+<link rel="stylesheet" href="css/shared.css"/>
+<link rel="stylesheet" href="css/index.css"/>
+</head>
+<body class="min-h-screen flex flex-col bg-background font-body-md text-on-background">
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header class="bg-surface w-full top-0 sticky border-b border-outline-variant shadow-sm z-50">
+  <div class="flex items-center justify-between px-margin-desktop max-w-container-max mx-auto h-20">
+    <div class="flex items-center gap-3 cursor-pointer">
+      <span class="material-symbols-outlined text-primary text-3xl">security</span>
+      <span class="text-sm sm:text-base font-bold text-primary whitespace-nowrap">Platform-Verification</span>
+      <!-- Drapeau Français SVG inline -->
+      <span class="ml-2 inline-flex rounded overflow-hidden border border-outline-variant shadow-sm" style="width:36px;height:24px;flex-shrink:0;">
+        <span style="flex:1;background:#002395;"></span>
+        <span style="flex:1;background:#FFFFFF;"></span>
+        <span style="flex:1;background:#ED2939;"></span>
+      </span>
+    </div>
+    <nav class="hidden md:flex items-center gap-6">
+      <a class="text-primary border-b-2 border-primary pb-1 font-label-md text-label-md" href="index.html">Accueil</a>
+      <a class="text-on-surface-variant hover:text-secondary transition-colors font-label-md text-label-md" href="verification.html">Vérification</a>
+      <a class="text-on-surface-variant hover:text-secondary transition-colors font-label-md text-label-md" href="#contact">Contact</a>
+    </nav>
+    <button id="mobile-menu-btn" class="md:hidden text-primary p-2 rounded-lg hover:bg-surface-container-high transition-colors" aria-label="Menu"><span class="material-symbols-outlined">menu</span></button>
+  </div>
+  <!-- Menu mobile déroulant -->
+  <div id="mobile-menu" class="hidden md:hidden bg-surface border-t border-outline-variant px-margin-mobile py-4 flex flex-col gap-4">
+    <a class="text-primary font-label-md text-label-md font-semibold flex items-center gap-2" href="index.html"><span class="material-symbols-outlined text-lg">home</span>Accueil</a>
+    <a class="text-on-surface-variant font-label-md text-label-md flex items-center gap-2" href="verification.html"><span class="material-symbols-outlined text-lg">verified</span>Vérification</a>
+    <a class="text-on-surface-variant font-label-md text-label-md flex items-center gap-2" href="#contact"><span class="material-symbols-outlined text-lg">mail</span>Contact</a>
+  </div>
+</header>
+
+<main class="flex-grow">
+
+  <!-- ── Hero ─────────────────────────────────────────── -->
+  <section class="relative bg-surface-container-low overflow-hidden hero-gradient border-b border-outline-variant">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+      <div class="z-10 relative">
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-fixed text-on-primary-fixed rounded-full font-label-sm text-label-sm mb-6 border border-primary-fixed-dim">
+          <span class="material-symbols-outlined fill text-sm">verified</span>
+          Service Officiel
+        </div>
+        <h1 class="font-display text-display mb-6 leading-tight">
+          <span class="text-primary">Bienvenue sur la plateforme de </span><span class="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">vérification de tickets</span>
+        </h1>
+        <p class="font-body-lg text-body-lg text-primary mb-8 max-w-lg">
+          La meilleure plateforme de vérification en France. Plus de <span class="text-green-500 font-bold">7000+ utilisateurs</span> nous font confiance pour sécuriser leurs transactions quotidiennes.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="verification.html" class="animate-color-btn text-white px-8 py-4 rounded-DEFAULT font-label-md text-label-md flex items-center justify-center gap-2 border-t border-white/20 shadow-md">
+            <span class="material-symbols-outlined">shield_lock</span>Vérifier un ticket
+          </a>
+          <a href="#indicateurs" class="bg-surface text-primary border border-outline-variant px-8 py-4 rounded-DEFAULT font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2 shadow-sm">
+            En savoir plus
+          </a>
+        </div>
+      </div>
+      <!-- Carousel -->
+      <div class="relative h-[400px] md:h-[500px] rounded-lg overflow-hidden shadow-security border border-outline-variant">
+        <div id="hero-carousel" class="absolute inset-0 flex">
+          <img alt="Équipe professionnelle en salle de réunion moderne." class="w-full h-full object-cover flex-shrink-0"
+               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgfAJH3sG0bYAw2unx2or93esXg_1P027iy4OW6mfRPRfCcZZPTr4KHcWuvQ7PStQgyPj_hoBTunZ1LEQxj-BrGHniQjo7PtxAdWPyjibqDgwjHjrxTpCyALtD_ljHjTzEuJMvEZatZCJmbD8L2aMlZfjj1TVVb7aRaGyuQtAY5uqgD2PFAVVh9AMc3ADGrYn8whd8LkIARqHw7cBE0o6R6zWGR8QT3hofM6MqRI4pcnM141fIqlnQwQ"/>
+          <img alt="Centre de cybersécurité avec écrans de surveillance." class="w-full h-full object-cover flex-shrink-0"
+               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT5veDvXRGz6SviIWnxjv7uKe2CVI8w_xERUYqVcPvl0UcdV9NtVieC3D6g9jZjSK4URwmzvLUHEO9Cm_F1bGFp0oxJXYn-LZejKI5FunG-I6hxNzNpcIeR905F_GSax2lcpjtOzV5hOBFbBoeY_tl-lik1O2-sSy5HY2mOSMVwMvK4yYE4LN5AJP1d_A7ZKWKAn3_hCrV2qOe29VWf--_SB2roBR6S_M3Cwf2xhKTcdCV9AqOePGWIQ"/>
+        </div>
+        <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+          <button class="carousel-dot active" data-index="0"></button>
+          <button class="carousel-dot inactive" data-index="1"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Partenaires ───────────────────────────────────── -->
+  <section class="py-12 bg-surface border-b border-outline-variant">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center">
+      <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-8">Partenaires Agréés</p>
+      <div class="partners-strip flex flex-wrap justify-center items-center gap-8 md:gap-16">
+        <div class="partner-logo-wrap"><img alt="Paysafecard" src="images/logo_paysafecar.png"/></div>
+        <div class="partner-logo-wrap"><img alt="Transcash"   src="images/logo_transcash2.png"/></div>
+        <div class="partner-logo-wrap"><img alt="PCS"         src="images/logo_pcs.png"/></div>
+        <div class="partner-logo-wrap"><img alt="Neosurf"     src="images/logo_neosurf.png"/></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Indicateurs de Confiance ─────────────────────── -->
+  <section class="py-16 bg-surface border-b border-outline-variant relative overflow-hidden">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+      <div class="text-center mb-12">
+        <span class="font-label-sm text-label-sm text-green-700 uppercase tracking-widest bg-green-100 border border-green-200 px-3 py-1 rounded-full">Indicateurs de Confiance</span>
+        <h2 class="font-headline-lg text-headline-lg text-primary mt-4 mb-3">Statistiques de Fiabilité en Temps Réel</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">Notre protocole de vérification est audité en temps réel pour garantir la sécurité absolue de vos transactions.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-center">
+        <!-- Stats Cards -->
+        <div class="space-y-6">
+          <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-security flex items-start gap-4 hover:border-green-500 transition-all duration-300">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
+              <span class="material-symbols-outlined">gpp_good</span>
+            </div>
+            <div>
+              <h3 class="font-headline-md text-headline-md text-green-600 font-bold">99.98%</h3>
+              <p class="font-label-md text-label-md text-on-surface font-semibold mt-1">Précision Certifiée</p>
+              <p class="text-xs text-on-surface-variant mt-1">Détection instantanée des codes invalides, périmés ou falsifiés.</p>
+            </div>
+          </div>
+
+          <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-security flex items-start gap-4 hover:border-green-500 transition-all duration-300">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
+              <span class="material-symbols-outlined">bolt</span>
+            </div>
+            <div>
+              <h3 class="font-headline-md text-headline-md text-green-600 font-bold">0.8s</h3>
+              <p class="font-label-md text-label-md text-on-surface font-semibold mt-1">Temps de Réponse</p>
+              <p class="text-xs text-on-surface-variant mt-1">Requêtes directes auprès des serveurs partenaires de paiement.</p>
+            </div>
+          </div>
+
+          <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-security flex items-start gap-4 hover:border-green-500 transition-all duration-300">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
+              <span class="material-symbols-outlined">lock</span>
+            </div>
+            <div>
+              <h3 class="font-headline-md text-headline-md text-green-600 font-bold">Chiffrement AES-256</h3>
+              <p class="font-label-md text-label-md text-on-surface font-semibold mt-1">Sécurité Bancaire</p>
+              <p class="text-xs text-on-surface-variant mt-1">Vos données de transactions sont anonymisées et cryptées de bout en bout.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Area -->
+        <div class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-security relative overflow-hidden">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h3 class="font-label-md text-label-md text-primary font-bold">Volume des Vérifications</h3>
+              <p class="text-xs text-on-surface-variant">Activité hebdomadaire des transactions sécurisées</p>
+            </div>
+            <div class="flex gap-4 text-xs font-semibold text-on-surface-variant">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span>Succès</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-secondary inline-block"></span>Tentatives Suspectes</span>
+            </div>
+          </div>
+          <div class="h-64 relative flex items-end px-2">
+            <!-- SVG chart -->
+            <svg class="w-full h-full overflow-visible" viewBox="0 0 500 150">
+              <defs>
+                <linearGradient id="landingChartGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#001360" stop-opacity="0.15"></stop>
+                  <stop offset="100%" stop-color="#001360" stop-opacity="0"></stop>
+                </linearGradient>
+              </defs>
+              <!-- Grid Lines -->
+              <line x1="0" y1="0" x2="500" y2="0" stroke="#F1F3F9" stroke-width="1"></line>
+              <line x1="0" y1="50" x2="500" y2="50" stroke="#F1F3F9" stroke-width="1"></line>
+              <line x1="0" y1="100" x2="500" y2="100" stroke="#F1F3F9" stroke-width="1"></line>
+              <line x1="0" y1="150" x2="500" y2="150" stroke="#E2E8F0" stroke-width="1"></line>
+
+              <!-- Area Path -->
+              <path d="M0,130 Q70,70 140,90 T280,40 T420,110 T500,20 L500,150 L0,150 Z" fill="url(#landingChartGrad)"></path>
+              <!-- Line Path -->
+              <path class="landing-chart-line" d="M0,130 Q70,70 140,90 T280,40 T420,110 T500,20" fill="none" stroke="#001360" stroke-width="3"></path>
+              
+              <!-- Secondary Line (Suspects) -->
+              <path class="landing-chart-line-suspect" d="M0,140 Q70,120 140,130 T280,110 T420,135 T500,125" fill="none" stroke="#bb0021" stroke-width="2" stroke-dasharray="4 4"></path>
+            </svg>
+            <div class="absolute bottom-0 left-2 right-2 flex justify-between text-[10px] text-on-surface-variant font-medium">
+              <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Processus ────────────────────────────────────── -->
+  <section class="py-16 md:py-24 bg-surface-container-lowest">
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+      <div class="text-center mb-16">
+        <h2 class="font-headline-lg text-headline-lg text-primary mb-4">Processus Sécurisé</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">Notre infrastructure de qualité institutionnelle garantit l'intégrité de chaque vérification en temps réel.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-surface rounded-lg p-8 border border-outline-variant shadow-security flex flex-col items-start relative overflow-hidden group">
+          <div class="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mb-6 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+            <span class="material-symbols-outlined">lock</span>
+          </div>
+          <h3 class="font-headline-md text-headline-md text-primary mb-3">Chiffrement Bout-en-Bout</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant">Vos données de vérification sont chiffrées avant même de quitter votre appareil, assurant une confidentialité totale.</p>
+          <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+            <span class="material-symbols-outlined" style="font-size:120px;">lock</span>
+          </div>
+        </div>
+        <div class="bg-surface rounded-lg p-8 border border-outline-variant shadow-security flex flex-col items-start relative overflow-hidden group md:col-span-2">
+          <div class="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mb-6 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+            <span class="material-symbols-outlined">speed</span>
+          </div>
+          <h3 class="font-headline-md text-headline-md text-primary mb-3">Vérification Instantanée</h3>
+          <p class="font-body-md text-body-md text-on-surface-variant mb-6 max-w-md">Connecté directement aux serveurs des émetteurs pour un résultat immédiat et irréfutable, réduisant les risques de fraude.</p>
+          <div class="mt-auto w-full bg-surface-container-lowest border border-outline-variant rounded-md p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-secondary-container text-on-error flex items-center justify-center">
+                <span class="material-symbols-outlined text-sm">close</span>
+              </div>
+              <span class="font-label-md text-label-md text-on-surface">Ticket Invalide détecté</span>
+            </div>
+            <span class="font-label-sm text-label-sm text-on-surface-variant">Il y a 2 sec</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Présence nationale ────────────────────────────── -->
+  <section class="py-16 md:py-24 bg-surface-container-low border-t border-outline-variant relative overflow-hidden">
+    <div class="absolute inset-0 opacity-30 pointer-events-none dot-pattern"></div>
+    <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop relative z-10">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-primary mb-6">Présence Nationale</h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant mb-8">Notre centre opérationnel est situé au cœur de Paris, garantissant une conformité stricte avec les régulations européennes et françaises.</p>
+          <ul class="space-y-4 mb-8">
+            <li class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+              <div>
+                <h4 class="font-label-md text-label-md font-bold text-on-surface">Conformité RGPD</h4>
+                <p class="font-body-md text-body-md text-on-surface-variant text-sm">Données hébergées en France</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+              <div>
+                <h4 class="font-label-md text-label-md font-bold text-on-surface">Support 24/7</h4>
+                <p class="font-body-md text-body-md text-on-surface-variant text-sm">Équipe dédiée aux fraudes</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="relative h-[400px] rounded-lg overflow-hidden border border-outline-variant shadow-security bg-surface p-2">
+          <div class="w-full h-full rounded-md bg-surface-container overflow-hidden relative">
+            <div class="absolute inset-0 bg-cover bg-center opacity-40 grayscale" data-location="Paris, France" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBK0dMNMdTb41xtvIr8JA_jSaoTUNcJQVimxedBmqOwXPO2uHJzw7DvbFWU7gj_urTWrV-yPh-hR7RLMxgPRv5TyFoCRx2lHXTeAr6zK3_0AiY8ZYVIVF6tDyJ3noNL2AAIhnrOkCw34S1N4-_BRebZHDysLAFPCh_j02wMHtA_VvO0VxX1Lu0W5n6y9guA-fOua07XLM1P0ymYIkqYq9Jq5d6uwmOX6z2My-5vAFurJ_sgZGFaWTeEIQ')"></div>
+            <!-- Data Points Over Map -->
+            <div class="absolute top-1/4 left-1/3 group">
+              <div class="w-4 h-4 bg-primary rounded-full animate-ping absolute"></div>
+              <div class="w-4 h-4 bg-primary rounded-full relative border-2 border-white"></div>
+              <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Paris Centre: 1.2k units</div>
+            </div>
+            <div class="absolute top-1/2 left-2/3 group">
+              <div class="w-4 h-4 bg-secondary rounded-full animate-ping absolute"></div>
+              <div class="w-4 h-4 bg-secondary rounded-full relative border-2 border-white"></div>
+              <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Nanterre: High Alert</div>
+            </div>
+            <div class="absolute bottom-1/4 left-1/2 group">
+              <div class="w-4 h-4 bg-primary rounded-full relative border-2 border-white"></div>
+              <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Ivry-sur-Seine: 840 units</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant w-full mt-auto" id="contact">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-desktop py-12 max-w-container-max mx-auto">
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-primary">security</span>
+        <span class="font-label-md text-label-md font-bold text-primary">Platform-Verification</span>
+      </div>
+      <p class="font-label-md text-label-md text-on-surface-variant">© 2024 Platform-Verification - République Française</p>
+    </div>
+    <div class="flex flex-wrap md:justify-end gap-6 items-center">
+      <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Mentions Légales</a>
+      <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Données Personnelles</a>
+      <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Accessibilité</a>
+      <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">CGU</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="js/carousel.js"></script>
+<script>
+  // Menu hamburger mobile
+  const menuBtn  = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener('click', () => {
+      const isOpen = !mobileMenu.classList.contains('hidden');
+      mobileMenu.classList.toggle('hidden', isOpen);
+      menuBtn.querySelector('span').textContent = isOpen ? 'menu' : 'close';
+    });
+  }
+</script>
+</body>
+</html>

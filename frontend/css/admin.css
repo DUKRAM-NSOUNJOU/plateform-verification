@@ -1,0 +1,136 @@
+/* ==============================================
+   ADMIN.CSS — Tableau de bord administration
+   ============================================== */
+
+body {
+    min-height: max(884px, 100dvh);
+}
+
+/* Sidebar */
+aside {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Tab bar */
+.tab-btn {
+    color: #444653;
+    border-bottom: 2px solid transparent;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    transition: color 0.2s, border-color 0.2s;
+}
+.tab-btn:hover { color: #bb0021; }
+.tab-btn.active {
+    color: #001360;
+    border-bottom-color: #001360;
+}
+
+/* Tab panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Code row fade-out on action */
+.code-row {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.code-row.removing {
+    opacity: 0;
+    transform: translateX(16px);
+}
+
+/* Status badges */
+.badge-valid {
+    background: #dee8ff;
+    color: #001360;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-invalid {
+    background: #ffdad6;
+    color: #ba1a1a;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Empty state */
+.empty-state {
+    padding: 32px;
+    text-align: center;
+    color: #444653;
+    font-size: 16px;
+}
+
+/* Bento Grid & SVG Line Chart for Analytics */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+}
+.chart-line {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: dash 3s linear forwards;
+}
+@keyframes dash {
+    to { stroke-dashoffset: 0; }
+}
+
+/* ── Mobile Bottom Navigation Bar ──────────────────────── */
+.mobile-tab-btn {
+    flex: 1;
+    gap: 2px;
+    border-radius: 8px;
+    transition: color 0.2s, background 0.2s;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+.mobile-tab-btn:active {
+    background: rgba(0, 19, 96, 0.07);
+}
+.mobile-tab-btn .material-symbols-outlined {
+    font-size: 22px;
+}
+
+/* ── Responsive bento grid (mobile-first) ──────────────── */
+@media (max-width: 767px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Reduce card padding on mobile */
+    .bg-surface-container-lowest.p-6 {
+        padding: 16px;
+    }
+
+    /* Stack horizontal rows */
+    .flex.gap-6 {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Hide desktop tabs on mobile */
+    .tab-btn {
+        display: none;
+    }
+}
+
+/* ── Success modal animation ────────────────────────────── */
+#success-modal {
+    transition: opacity 0.3s ease;
+}
+#success-modal > div {
+    transition: transform 0.3s ease;
+}
