@@ -144,7 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="p-6 flex-1 flex flex-col gap-4 user-card-body">
                         ${userTickets.map(t => `
                             <div class="code-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50" data-id="${t.id}">
-                                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono">${t.code}</div>
+                                <div class="code-value font-headline-md tracking-widest text-on-surface font-mono flex-1">${t.code}</div>
+                                <button class="copy-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Copier le code">
+                                    <span class="material-symbols-outlined" style="font-size:18px;">content_copy</span>
+                                </button>
                                 <div class="flex gap-2">
                                     <button class="btn-validate flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
                                         <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>Valider
@@ -166,6 +169,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         grid.querySelectorAll('.btn-invalidate').forEach(btn => {
             btn.addEventListener('click', () => handleTicketAction(btn, 'invalider'));
+        });
+        grid.querySelectorAll('.copy-code-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const code = e.currentTarget.closest('.code-row').querySelector('.code-value').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    const original = e.currentTarget.innerHTML;
+                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span>';
+                    setTimeout(() => e.currentTarget.innerHTML = original, 1500);
+                });
+            });
         });
     }
 
