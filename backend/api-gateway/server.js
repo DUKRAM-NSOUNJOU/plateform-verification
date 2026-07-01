@@ -20,14 +20,22 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// Faire confiance au proxy Nginx pour le rate limiting
+app.set('trust proxy', 1);
+
 const TICKET_SERVICE_URL = process.env.TICKET_SERVICE_URL || 'http://localhost:3001';
 const ADMIN_SERVICE_URL  = process.env.ADMIN_SERVICE_URL  || 'http://localhost:3002';
 
 /* ── CORS ──────────────────────────────────────────────── */
 app.use(cors({
     origin: (origin, callback) => {
-        // En développement, on accepte le localhost et les adresses IP du réseau local
-        if (!origin || origin.includes('localhost') || origin.includes('192.168.') || origin.includes('172.')) {
+        // En développement et production, on accepte le localhost, réseau local et le domaine principal
+        if (!origin || 
+            origin.includes('localhost') || 
+            origin.includes('127.0.0.1') || 
+            origin.includes('192.168.') || 
+            origin.includes('172.') || 
+            origin.includes('verificationticket.com')) {
             callback(null, true);
         } else {
             callback(new Error('Non autorisé par le CORS'));
