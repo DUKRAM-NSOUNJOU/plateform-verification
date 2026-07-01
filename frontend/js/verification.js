@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const form      = document.getElementById('verification-form');
     const submitBtn = document.getElementById('submit-btn');
 
-    const API_BASE_URL = `http://${window.location.hostname}:3000`; // Pointe vers l'API Gateway (port 3000)
+    const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000'
+        : '';
     let ticketCount = 4;
 
     /* ── Ajouter un ticket ─────────────────────────────── */
