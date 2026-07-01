@@ -25,7 +25,14 @@ const ADMIN_SERVICE_URL  = process.env.ADMIN_SERVICE_URL  || 'http://localhost:3
 
 /* ── CORS ──────────────────────────────────────────────── */
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5500',
+    origin: (origin, callback) => {
+        // En développement, on accepte le localhost et les adresses IP du réseau local
+        if (!origin || origin.includes('localhost') || origin.includes('192.168.') || origin.includes('172.')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Non autorisé par le CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

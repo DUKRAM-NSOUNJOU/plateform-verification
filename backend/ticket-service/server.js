@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3001;
 /* ── Middleware ────────────────────────────────────────── */
 // Seul le gateway peut appeler ce service (en prod)
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGIN || '*',
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type']
 }));

@@ -1,0 +1,67 @@
+-- ─────────────────────────────────────────────────────────────────
+-- Plate-Verification — Schéma PostgreSQL
+-- ─────────────────────────────────────────────────────────────────
+
+-- Extension UUID
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ── Table : admins ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admins (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email      TEXT UNIQUE NOT NULL,
+    password   TEXT NOT NULL,            -- bcrypt hash
+    nom        TEXT NOT NULL DEFAULT 'Administrateur',
+    role       TEXT NOT NULL DEFAULT 'admin',  -- admin | superadmin
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── Table : tickets ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS tickets (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    statut     TEXT NOT NULL DEFAULT 'en_attente',  -- en_attente | valide | invalide
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Index pour filtrer par statut rapidement
+CREATE INDEX IF NOT EXISTS idx_tickets_statut ON tickets(statut);
+CREATE INDEX IF NOT EXISTS idx_tickets_email  ON tickets(email);
+
+-- ── Table : historique ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS historique (
+    id         SERIAL PRIMARY KEY,
+    ticket_id  UUID REFERENCES tickets(id) ON DELETE SET NULL,
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    action     TEXT NOT NULL,   -- valide | invalide
+    admin_id   UUID REFERENCES admins(id) ON DELETE SET NULL,
+    admin_email TEXT,
+    date       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── Trigger : auto mise à jour de updated_at ─────────────────────
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_tickets_updated_at ON tickets;
+CREATE TRIGGER trg_tickets_updated_at
+    BEFORE UPDATE ON tickets
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ── Seed : admin par défaut ───────────────────────────────────────
+-- Mot de passe par défaut : Admin@2024 (à changer en prod)
+-- Hash bcrypt généré offline pour la seed initiale
+INSERT INTO admins (email, password, nom, role)
+VALUES (
+    'admin@plate-verification.fr',
+    '$2b$10$mXq5OY0ACgRw7.X4gzAHm.5yPEU.yNkRi1aMQbJJlIg7oGH3LiBxG',
+    'Super Admin',
+    'superadmin'
+) ON CONFLICT (email) DO NOTHING;

@@ -6,6 +6,15 @@
 <title>Platform-Verification - Accueil</title>
 <meta name="description" content="La meilleure plateforme de vérification de tickets en France. Plus de 7000+ utilisateurs nous font confiance."/>
 
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#1a3a6b"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Plate-Verif"/>
+<link rel="apple-touch-icon" href="/images/icon-192.png"/>
+
+
 <!-- Tailwind CDN -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Google Fonts -->
@@ -292,7 +301,7 @@
         <span class="material-symbols-outlined text-primary">security</span>
         <span class="font-label-md text-label-md font-bold text-primary">Platform-Verification</span>
       </div>
-      <p class="font-label-md text-label-md text-on-surface-variant">© 2024 Platform-Verification - République Française</p>
+      <p class="font-label-md text-label-md text-on-surface-variant">© 2026 Platform-Verification - République Française</p>
     </div>
     <div class="flex flex-wrap md:justify-end gap-6 items-center">
       <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Mentions Légales</a>
@@ -314,6 +323,16 @@
       const isOpen = !mobileMenu.classList.contains('hidden');
       mobileMenu.classList.toggle('hidden', isOpen);
       menuBtn.querySelector('span').textContent = isOpen ? 'menu' : 'close';
+    });
+  }
+</script>
+<!-- PWA Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[PWA] Service Worker enregistré:', reg.scope))
+        .catch(err => console.warn('[PWA] Erreur SW:', err));
     });
   }
 </script>

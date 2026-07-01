@@ -6,6 +6,13 @@
 <title>Vérification de Tickets - Platform-Verification</title>
 <meta name="description" content="Vérifiez l'authenticité de vos tickets en ligne. Plateforme officielle sécurisée."/>
 
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#1a3a6b"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Plate-Verif"/>
+<link rel="apple-touch-icon" href="/images/icon-192.png"/>
+
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -118,7 +125,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter px-margin-mobile md:px-margin-desktop py-12 max-w-container-max mx-auto">
     <div class="flex flex-col gap-2">
       <span class="font-label-md text-label-md font-bold text-primary">Platform-Verification</span>
-      <span class="font-label-md text-label-md text-on-surface-variant">© 2024 Platform-Verification - République Française</span>
+      <span class="font-label-md text-label-md text-on-surface-variant">© 2026 Platform-Verification - République Française</span>
     </div>
     <div class="flex flex-wrap gap-x-6 gap-y-3 md:justify-end items-center">
       <a class="font-label-md text-label-md text-on-surface-variant hover:text-secondary transition-all duration-200" href="#">Mentions Légales</a>
@@ -158,6 +165,16 @@
       const isOpen = !mobileMenu2.classList.contains('hidden');
       mobileMenu2.classList.toggle('hidden', isOpen);
       menuBtn2.querySelector('span').textContent = isOpen ? 'menu' : 'close';
+    });
+  }
+</script>
+<!-- PWA Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[PWA] SW enregistré:', reg.scope))
+        .catch(err => console.warn('[PWA] Erreur SW:', err));
     });
   }
 </script>

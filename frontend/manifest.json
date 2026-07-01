@@ -1,0 +1,45 @@
+{
+  "name": "Plate-Verification — Vérification de Tickets",
+  "short_name": "Plate-Verif",
+  "description": "La meilleure plateforme de vérification de tickets en France. Vérifiez vos tickets PaysafeCard, Transcash, PCS et Neosurf instantanément.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a1628",
+  "theme_color": "#1a3a6b",
+  "lang": "fr",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vérifier un ticket",
+      "short_name": "Vérifier",
+      "description": "Soumettre des tickets pour vérification",
+      "url": "/verification.html",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard Admin",
+      "short_name": "Admin",
+      "description": "Accéder au tableau de bord administrateur",
+      "url": "/admin.html",
+      "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

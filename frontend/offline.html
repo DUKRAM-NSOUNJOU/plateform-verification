@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Hors-ligne — Plate-Verification</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a3a6b 60%, #0d2244 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .card {
+            text-align: center;
+            padding: 3rem 2rem;
+            max-width: 480px;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #f4c542;
+        }
+        p {
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            background: #f4c542;
+            color: #0a1628;
+            font-weight: 700;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .flag {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 2rem;
+        }
+        .flag span {
+            width: 24px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        .flag .bleu { background: #002395; }
+        .flag .blanc { background: white; }
+        .flag .rouge { background: #ED2939; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">📡</div>
+        <h1>Vous êtes hors-ligne</h1>
+        <p>
+            Plate-Verification nécessite une connexion Internet pour vérifier vos tickets
+            en temps réel. Vérifiez votre connexion et réessayez.
+        </p>
+        <a href="/" class="btn" onclick="window.location.reload()">Réessayer</a>
+        <div class="flag">
+            <span class="bleu"></span>
+            <span class="blanc"></span>
+            <span class="rouge"></span>
+        </div>
+    </div>
+</body>
+</html>

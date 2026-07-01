@@ -2,13 +2,56 @@
    ADMIN.CSS — Tableau de bord administration
    ============================================== */
 
-body {
-    min-height: max(884px, 100dvh);
+/* ── Layout global : empêche tout scroll de la page entière ── */
+html, body {
+    height: 100%;
+    overflow: hidden;
 }
 
-/* Sidebar */
-aside {
-    transition: transform 0.3s ease-in-out;
+/* Le body est un flex row : sidebar | contenu principal */
+body {
+    display: flex;
+    flex-direction: row;
+}
+
+/* ── Sidebar fixe (ne scroll jamais) ──────────────────────── */
+aside#admin-sidebar {
+    /* Position fixed géré via tailwind (fixed left-0 top-0 h-full) */
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* ── Backdrop sombre quand la sidebar mobile est ouverte ────── */
+#sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 90;
+    backdrop-filter: blur(2px);
+}
+#sidebar-backdrop.active {
+    display: block;
+}
+
+/* ── Zone de contenu principale : seule cette zone scrolle ─── */
+.main-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    flex: 1;
+}
+
+.main-content-wrapper > header {
+    flex-shrink: 0;  /* Le header ne rétrécit jamais */
+}
+
+.main-content-wrapper > main {
+    flex: 1;
+    overflow-y: auto;  /* Scroll UNIQUEMENT dans le main */
+    overscroll-behavior: contain;
 }
 
 /* Tab bar */
