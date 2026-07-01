@@ -223,4 +223,22 @@ router.patch('/tickets/:id/invalider', requireAuth, async (req, res) => {
     }
 });
 
+/* ── POST /send-status-email (protégé) ────────────────────── */
+const { sendStatusEmail } = require('../services/mailer');
+
+router.post('/send-status-email', requireAuth, async (req, res) => {
+    const { email, tickets } = req.body;
+    if (!email || !tickets || !tickets.length) {
+        return res.status(400).json({ error: 'L\'email et les tickets sont requis.' });
+    }
+
+    try {
+        const result = await sendStatusEmail(email, tickets);
+        res.json({ success: true, message: `Email envoyé à ${email}`, result });
+    } catch (err) {
+        console.error('[admin-service] Erreur envoi email:', err.message);
+        res.status(500).json({ error: 'Impossible d\'envoyer l\'email pour le moment.' });
+    }
+});
+
 module.exports = router;

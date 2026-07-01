@@ -533,22 +533,72 @@ document.addEventListener('DOMContentLoaded', () => {
             e.currentTarget.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:18px;">sync</span> Envoi...';
             e.currentTarget.disabled = true;
 
-            // Simulation d'envoi d'email
-            setTimeout(() => {
-                e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
-                e.currentTarget.classList.add('bg-green-600', 'text-white');
-                e.currentTarget.classList.remove('bg-primary', 'text-on-primary');
-                
+            const card = document.querySelector(`.user-block-card[data-email="${email}"]`);
+            const rows = card ? card.querySelectorAll('.code-row') : [];
+            const tickets = Array.from(rows).map(row => ({
+                code: row.dataset.code,
+                status: row.dataset.status
+            }));
+
+            if (useFallback) {
+                // Simulation d'envoi d'email
                 setTimeout(() => {
-                    document.getElementById('send-mail-modal').classList.add('hidden');
-                    document.getElementById('send-mail-modal').classList.remove('flex');
-                    // Restaurer le bouton
+                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
+                    e.currentTarget.classList.add('bg-green-600', 'text-white');
+                    e.currentTarget.classList.remove('bg-primary', 'text-on-primary');
+                    
+                    setTimeout(() => {
+                        document.getElementById('send-mail-modal').classList.add('hidden');
+                        document.getElementById('send-mail-modal').classList.remove('flex');
+                        // Restaurer le bouton
+                        e.currentTarget.innerHTML = originalHTML;
+                        e.currentTarget.disabled = false;
+                        e.currentTarget.classList.remove('bg-green-600', 'text-white');
+                        e.currentTarget.classList.add('bg-primary', 'text-on-primary');
+                        
+                        // Retirer visuellement la carte simulée
+                        if (card) card.remove();
+                    }, 1000);
+                }, 1000);
+            } else {
+                fetch(`${API_BASE_URL}/api/admin/send-status-email`, {
+                    method: 'POST',
+                    headers: {
+                        ...getAuthHeaders(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, tickets })
+                })
+                .then(res => {
+                    if (res.status === 401) { logout(); return; }
+                    if (!res.ok) throw new Error("Erreur serveur lors de l'envoi");
+                    return res.json();
+                })
+                .then(() => {
+                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
+                    e.currentTarget.classList.add('bg-green-600', 'text-white');
+                    e.currentTarget.classList.remove('bg-primary', 'text-on-primary');
+                    
+                    setTimeout(() => {
+                        document.getElementById('send-mail-modal').classList.add('hidden');
+                        document.getElementById('send-mail-modal').classList.remove('flex');
+                        // Restaurer le bouton
+                        e.currentTarget.innerHTML = originalHTML;
+                        e.currentTarget.disabled = false;
+                        e.currentTarget.classList.remove('bg-green-600', 'text-white');
+                        e.currentTarget.classList.add('bg-primary', 'text-on-primary');
+                        
+                        // Recharger l'onglet actif pour nettoyer
+                        loadDataForTab('recus');
+                    }, 1000);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Impossible d'envoyer l'email via l'API.");
                     e.currentTarget.innerHTML = originalHTML;
                     e.currentTarget.disabled = false;
-                    e.currentTarget.classList.remove('bg-green-600', 'text-white');
-                    e.currentTarget.classList.add('bg-primary', 'text-on-primary');
-                }, 1000);
-            }, 1500);
+                });
+            }
         });
     }
 
