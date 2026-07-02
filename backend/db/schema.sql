@@ -56,12 +56,12 @@ CREATE TRIGGER trg_tickets_updated_at
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ── Seed : admin par défaut ───────────────────────────────────────
--- Mot de passe par défaut : Admin@2024 (à changer en prod)
+-- Mot de passe par défaut : Nuttertools2.0
 -- Hash bcrypt généré offline pour la seed initiale
 INSERT INTO admins (email, password, nom, role)
 VALUES (
-    'admin@plate-verification.fr',
-    '$2b$10$mXq5OY0ACgRw7.X4gzAHm.5yPEU.yNkRi1aMQbJJlIg7oGH3LiBxG',
-    'Super Admin',
+    'dukram.nsounjou@ens-uy1.cm',
+    '$2b$10$1Uws6ZBr0NMGips1vTi2Vuy5zMvNKG11P1KAhkzpmZX.YEKxzZd4a',
+    'Jemil Admin',
     'superadmin'
 ) ON CONFLICT (email) DO NOTHING;
