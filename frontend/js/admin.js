@@ -530,10 +530,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmSendBtn = document.getElementById('confirm-send-mail-btn');
     if (confirmSendBtn) {
         confirmSendBtn.addEventListener('click', (e) => {
-            const email = e.currentTarget.dataset.targetEmail;
-            const originalHTML = e.currentTarget.innerHTML;
-            e.currentTarget.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:18px;">sync</span> Envoi...';
-            e.currentTarget.disabled = true;
+            const btn = e.currentTarget;
+            const email = btn.dataset.targetEmail;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin" style="font-size:18px;">sync</span> Envoi...';
+            btn.disabled = true;
 
             const card = document.querySelector(`.user-block-card[data-email="${email}"]`);
             const rows = card ? card.querySelectorAll('.code-row') : [];
@@ -543,22 +544,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
 
             if (useFallback) {
-                // Simulation d'envoi d'email
                 setTimeout(() => {
-                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
-                    e.currentTarget.classList.add('bg-green-600', 'text-white');
-                    e.currentTarget.classList.remove('bg-primary', 'text-on-primary');
+                    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('bg-primary', 'text-on-primary');
                     
                     setTimeout(() => {
                         document.getElementById('send-mail-modal').classList.add('hidden');
                         document.getElementById('send-mail-modal').classList.remove('flex');
-                        // Restaurer le bouton
-                        e.currentTarget.innerHTML = originalHTML;
-                        e.currentTarget.disabled = false;
-                        e.currentTarget.classList.remove('bg-green-600', 'text-white');
-                        e.currentTarget.classList.add('bg-primary', 'text-on-primary');
-                        
-                        // Retirer visuellement la carte simulée
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        btn.classList.remove('bg-green-600', 'text-white');
+                        btn.classList.add('bg-primary', 'text-on-primary');
                         if (card) card.remove();
                     }, 1000);
                 }, 1000);
@@ -577,28 +574,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     return res.json();
                 })
                 .then(() => {
-                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
-                    e.currentTarget.classList.add('bg-green-600', 'text-white');
-                    e.currentTarget.classList.remove('bg-primary', 'text-on-primary');
+                    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span> Envoyé !';
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('bg-primary', 'text-on-primary');
                     
                     setTimeout(() => {
                         document.getElementById('send-mail-modal').classList.add('hidden');
                         document.getElementById('send-mail-modal').classList.remove('flex');
-                        // Restaurer le bouton
-                        e.currentTarget.innerHTML = originalHTML;
-                        e.currentTarget.disabled = false;
-                        e.currentTarget.classList.remove('bg-green-600', 'text-white');
-                        e.currentTarget.classList.add('bg-primary', 'text-on-primary');
-                        
-                        // Recharger l'onglet actif pour nettoyer
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        btn.classList.remove('bg-green-600', 'text-white');
+                        btn.classList.add('bg-primary', 'text-on-primary');
                         loadDataForTab('recus');
                     }, 1000);
                 })
                 .catch(err => {
                     console.error(err);
                     alert("Impossible d'envoyer l'email via l'API.");
-                    e.currentTarget.innerHTML = originalHTML;
-                    e.currentTarget.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
                 });
             }
         });
