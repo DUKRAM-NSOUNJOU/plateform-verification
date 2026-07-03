@@ -172,6 +172,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const invalidesData  = [];
     const historiqueData = [];
     let useFallback = false;
+    let lastPendingCount = 0;
+    let autoRefreshTimer = null;
+    const activeTab = () => document.querySelector('.tab-btn.active')?.dataset.tab || 'analytics';
+
+    /* ── Rafraîchir l'onglet actif ─────────────────────── */
+    function refreshCurrentTab() {
+        loadDataForTab(activeTab());
+        updateNotificationBadge();
+    }
+
+    /* ── Bouton rafraîchir ─────────────────────────────── */
+    document.getElementById('refresh-tickets-btn')?.addEventListener('click', refreshCurrentTab);
+
+    /* ── Auto-rafraîchissement toutes les 30s ──────────── */
+    function startAutoRefresh() {
+        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+        autoRefreshTimer = setInterval(refreshCurrentTab, 30000);
+    }
+    startAutoRefresh();
+
+    /* ── Notification popup ────────────────────────────── */
+    const notifPopup = document.getElementById('notification-popup');
+    let notifTimeout = null;
+
+    function showNotification(count, email) {
+        if (!notifPopup) return;
+        const title = notifPopup.querySelector('#notif-title');
+        const text = notifPopup.querySelector('#notif-text');
+        const userText = email ? ` de ${email}` : '';
+        if (title) title.textContent = 'Nouveaux tickets reçus !';
+        if (text) text.textContent = `${count} nouveau(x) ticket(s)${userText} en attente`;
+        notifPopup.classList.remove('hidden', 'translate-x-full', 'opacity-0');
+        notifPopup.classList.add('flex', 'translate-x-0', 'opacity-100');
+        if (notifTimeout) clearTimeout(notifTimeout);
+        notifTimeout = setTimeout(hideNotification, 10000);
+    }
+
+    function hideNotification() {
+        if (!notifPopup) return;
+        notifPopup.classList.add('translate-x-full', 'opacity-0');
+        notifPopup.classList.remove('translate-x-0', 'opacity-100');
+        if (notifTimeout) { clearTimeout(notifTimeout); notifTimeout = null; }
+    }
+
+    document.getElementById('notif-close-btn')?.addEventListener('click', hideNotification);
+    document.getElementById('notif-refresh-btn')?.addEventListener('click', () => {
+        hideNotification();
+        switchToTab('recus');
+    });
+
+    async function updateNotificationBadge() {
+        if (useFallback) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/tickets`, { headers: getAuthHeaders() });
+            if (!res.ok) return;
+            const data = await res.json();
+            const count = data.tickets?.length || 0;
+            if (count > lastPendingCount && lastPendingCount > 0) {
+                const newCount = count - lastPendingCount;
+                showNotification(newCount);
+            }
+            lastPendingCount = count;
+        } catch (_) {}
+    }
 
     /* ── Chargement Initial ────────────────────────────── */
     loadDataForTab('analytics');

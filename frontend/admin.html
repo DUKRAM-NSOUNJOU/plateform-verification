@@ -368,8 +368,13 @@
       <!-- Tab: Codes Reçus -->
       <div class="tab-panel" id="tab-recus">
         <div class="flex justify-between items-end mb-6">
-          <h2 class="font-headline-md text-headline-md text-on-surface">Codes Reçus pour Vérification</h2>
-          <span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full" id="pending-count">3 tickets en attente</span>
+          <div class="flex items-center gap-3">
+            <h2 class="font-headline-md text-headline-md text-on-surface">Codes Reçus pour Vérification</h2>
+            <button id="refresh-tickets-btn" class="p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Rafraîchir">
+              <span class="material-symbols-outlined" style="font-size:20px;">refresh</span>
+            </button>
+          </div>
+          <span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full" id="pending-count">0 ticket en attente</span>
         </div>
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-gutter" id="users-grid">
 
@@ -556,7 +561,24 @@
   </div>
 </div>
 
-<!-- Modal: Confirmer Envoi Mail -->
+  <!-- Notification popup -->
+  <div id="notification-popup" class="fixed top-4 right-4 z-[99999] hidden items-center gap-4 bg-surface shadow-xl rounded-xl border border-outline-variant p-4 max-w-sm transition-all duration-300 translate-x-full opacity-0">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">notifications</span>
+      </div>
+      <div>
+        <p class="font-label-md text-label-md text-on-surface font-semibold" id="notif-title">Nouveaux tickets reçus !</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="notif-text">0 nouveau(x) ticket(s) en attente</p>
+      </div>
+    </div>
+    <div class="flex gap-2 shrink-0">
+      <button id="notif-refresh-btn" class="px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity">Voir</button>
+      <button id="notif-close-btn" class="px-3 py-1.5 bg-surface-container-high text-on-surface rounded-lg text-xs hover:bg-surface-container-highest transition-colors">Fermer</button>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmer Envoi Mail -->
 <div id="send-mail-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
   <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-xl mx-4 border border-outline-variant flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-outline-variant flex justify-between items-center">

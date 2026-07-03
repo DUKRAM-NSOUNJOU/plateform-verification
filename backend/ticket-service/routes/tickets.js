@@ -14,6 +14,8 @@ const { query } = require('../db');
 
 const router = express.Router();
 
+const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3002';
+
 /* ── POST /verify ──────────────────────────────────────────────── */
 router.post('/verify', async (req, res) => {
     const { email, tickets: codes } = req.body;
@@ -54,6 +56,16 @@ router.post('/verify', async (req, res) => {
         await query('COMMIT');
 
         console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail}`);
+
+        // Notification asynchrone (ne bloque pas la réponse)
+        const codesList = inserted.map(t => t.code);
+        fetch(`${ADMIN_SERVICE_URL}/api/admin/notify-submission`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail, codes: codesList })
+        }).catch(err => {
+            console.warn('[ticket-service] Erreur notification admin-service:', err.message);
+        });
 
         return res.status(201).json({
             message: `${inserted.length} ticket(s) envoyé(s) pour vérification.`,

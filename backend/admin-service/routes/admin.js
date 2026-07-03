@@ -20,6 +20,7 @@ const express  = require('express');
 const jwt      = require('jsonwebtoken');
 const bcrypt   = require('bcryptjs');
 const { query } = require('../db');
+const { sendStatusEmail, sendConfirmationEmail, sendAdminNotification } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -183,10 +184,24 @@ router.get('/historique', requireAuth, async (_req, res) => {
     }
 });
 
+/* ── Helper : envoyer email de statut pour un utilisateur ──── */
+async function sendStatusEmailForUser(userEmail, tickets) {
+    try {
+        await sendStatusEmail(userEmail, tickets);
+        console.log(`[admin-service] Email de statut envoyé à ${userEmail}`);
+    } catch (err) {
+        console.warn(`[admin-service] Erreur envoi email à ${userEmail}:`, err.message);
+    }
+}
+
 /* ── PATCH /tickets/:id/valider (protégé) ────────────────────── */
 router.patch('/tickets/:id/valider', requireAuth, async (req, res) => {
     try {
         const ticket = await callTicketService(`/${req.params.id}`);
+
+        // Envoyer l'email AVANT de changer le statut
+        await sendStatusEmailForUser(ticket.email, [{ code: ticket.code, status: 'valide' }]);
+
         const updated = await callTicketService(`/${req.params.id}`, 'PATCH', { statut: 'valide' });
 
         await query(
@@ -196,7 +211,7 @@ router.patch('/tickets/:id/valider', requireAuth, async (req, res) => {
         );
 
         console.log(`[admin-service] ✓ Ticket ${ticket.code} validé par ${req.admin.email}`);
-        res.json({ message: 'Ticket validé avec succès.', ticket: updated.ticket });
+        res.json({ message: 'Ticket validé avec succès. Email envoyé.', ticket: updated.ticket });
     } catch (err) {
         console.error('[admin-service] Erreur validation:', err);
         res.status(err.status || 503).json({ error: err.error || 'Erreur lors de la validation.' });
@@ -207,6 +222,10 @@ router.patch('/tickets/:id/valider', requireAuth, async (req, res) => {
 router.patch('/tickets/:id/invalider', requireAuth, async (req, res) => {
     try {
         const ticket = await callTicketService(`/${req.params.id}`);
+
+        // Envoyer l'email AVANT de changer le statut
+        await sendStatusEmailForUser(ticket.email, [{ code: ticket.code, status: 'invalide' }]);
+
         const updated = await callTicketService(`/${req.params.id}`, 'PATCH', { statut: 'invalide' });
 
         await query(
@@ -216,16 +235,55 @@ router.patch('/tickets/:id/invalider', requireAuth, async (req, res) => {
         );
 
         console.log(`[admin-service] ✗ Ticket ${ticket.code} invalidé par ${req.admin.email}`);
-        res.json({ message: 'Ticket invalidé avec succès.', ticket: updated.ticket });
+        res.json({ message: 'Ticket invalidé avec succès. Email envoyé.', ticket: updated.ticket });
     } catch (err) {
         console.error('[admin-service] Erreur invalidation:', err);
         res.status(err.status || 503).json({ error: err.error || 'Erreur lors de l\'invalidation.' });
     }
 });
 
-/* ── POST /send-status-email (protégé) ────────────────────── */
-const { sendStatusEmail } = require('../services/mailer');
+/* ── GET /admins — liste des emails administrateurs (protégé) ── */
+router.get('/admins', requireAuth, async (_req, res) => {
+    try {
+        const result = await query('SELECT id, email, nom FROM admins ORDER BY nom');
+        res.json({ admins: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur récupération administrateurs.' });
+    }
+});
 
+/* ── POST /notify-submission (NON protégé — appelé par ticket-service) ── */
+/* Envoie un email de confirmation à l'utilisateur et notifie tous les admins */
+router.post('/notify-submission', async (req, res) => {
+    const { email, codes } = req.body;
+    if (!email || !codes || !codes.length) {
+        return res.status(400).json({ error: 'Email et codes requis.' });
+    }
+
+    try {
+        // 1. Confirmation à l'utilisateur
+        const confirmResult = await sendConfirmationEmail(email, codes);
+
+        // 2. Notification à tous les admins
+        const adminResult = await query('SELECT email FROM admins');
+        const adminEmails = adminResult.rows.map(a => a.email);
+        let notifyResults = [];
+        if (adminEmails.length > 0) {
+            notifyResults = await sendAdminNotification(adminEmails, email, codes.length);
+        }
+
+        res.json({
+            success: true,
+            confirmation: confirmResult,
+            adminNotifications: notifyResults
+        });
+    } catch (err) {
+        console.error('[admin-service] Erreur notify-submission:', err.message);
+        res.status(500).json({ error: 'Erreur lors de l\'envoi des notifications.' });
+    }
+});
+
+/* ── POST /send-status-email (protégé) ────────────────────── */
 router.post('/send-status-email', requireAuth, async (req, res) => {
     const { email, tickets } = req.body;
     if (!email || !tickets || !tickets.length) {
@@ -233,6 +291,7 @@ router.post('/send-status-email', requireAuth, async (req, res) => {
     }
 
     try {
+        // Envoyer d'abord l'email de résultat à l'utilisateur
         const result = await sendStatusEmail(email, tickets);
         res.json({ success: true, message: `Email envoyé à ${email}`, result });
     } catch (err) {

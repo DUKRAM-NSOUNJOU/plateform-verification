@@ -27,22 +27,25 @@ const TICKET_SERVICE_URL = process.env.TICKET_SERVICE_URL || 'http://localhost:3
 const ADMIN_SERVICE_URL  = process.env.ADMIN_SERVICE_URL  || 'http://localhost:3002';
 
 /* ── CORS ──────────────────────────────────────────────── */
+const allowedOrigins = [
+    'http://localhost:9000',
+    'http://localhost:3000',
+    'http://127.0.0.1:9000',
+    'http://127.0.0.1:3000',
+    'https://verificationticket.com',
+    'http://verificationticket.com'
+];
 app.use(cors({
     origin: (origin, callback) => {
-        // En développement et production, on accepte le localhost, réseau local et le domaine principal
-        if (!origin || 
-            origin.includes('localhost') || 
-            origin.includes('127.0.0.1') || 
-            origin.includes('192.168.') || 
-            origin.includes('172.') || 
-            origin.includes('verificationticket.com')) {
+        if (!origin || allowedOrigins.some(o => origin.startsWith(o) || origin.includes('localhost') || origin.includes('192.168.') || origin.startsWith('http://172.') || origin.startsWith('https://172.'))) {
             callback(null, true);
         } else {
             callback(new Error('Non autorisé par le CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 
 /* ── Rate limiting global ──────────────────────────────── */
