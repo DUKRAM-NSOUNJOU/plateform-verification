@@ -1,36 +1,43 @@
-const Mailgun = require('mailgun.js');
-const FormData = require('form-data');
+const nodemailer = require('nodemailer');
 
-const mailgun = new Mailgun(FormData);
+const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+const smtpPort = process.env.SMTP_PORT || 587;
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+const fromEmail = process.env.SMTP_FROM || '"Platform-Verification" <noreply@verificationticket.com>';
 
-const apiKey = process.env.MAILGUN_API_KEY;
-const domain = process.env.MAILGUN_DOMAIN;
-const fromEmail = process.env.MAILGUN_FROM || 'Platform-Verification <noreply@verificationticket.com>';
-
-let mg;
-if (apiKey && apiKey !== 'key-met_ta_cle_api_mailgun_ici_plus_tard') {
-    mg = mailgun.client({
-        username: 'api',
-        key: apiKey,
-        url: process.env.MAILGUN_URL || 'https://api.mailgun.net'
+let transporter;
+if (smtpUser && smtpPass) {
+    transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: false, // true pour le port 465, false pour les autres (Brevo utilise 587 avec STARTTLS)
+        auth: {
+            user: smtpUser,
+            pass: smtpPass
+        }
     });
-    console.log('[Mailer] Mailgun configuré.');
+    console.log('[Mailer] Serveur SMTP (Brevo) configuré.');
 } else {
-    console.warn('[Mailer] Mailgun n\'est pas configuré. Mode simulation actif.');
+    console.warn('[Mailer] Identifiants SMTP non configurés. Mode simulation actif.');
 }
 
 /**
- * Envoie un email récapitulatif de statut à un utilisateur
- * @param {string} to - Email du destinataire
- * @param {Array}  tickets - [{code, status}]
+ * Fonction interne pour envoyer un email
  */
 async function sendMail(subject, to, html) {
-    if (!mg) {
+    if (!transporter) {
         console.log(`[Mailer Simulator] Email à ${to}: ${subject}`);
         return { simulated: true, to, subject };
     }
     try {
-        return await mg.messages.create(domain, { from: fromEmail, to: [to], subject, html });
+        const info = await transporter.sendMail({
+            from: fromEmail,
+            to,
+            subject,
+            html
+        });
+        return info;
     } catch (err) {
         console.error(`[Mailer] Erreur envoi email à ${to}:`, err.message);
         throw err;
