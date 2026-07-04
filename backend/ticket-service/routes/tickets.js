@@ -139,4 +139,18 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
+/* ── DELETE /:id — suppression ─────────────────────────────────── */
+router.delete('/:id', async (req, res) => {
+    try {
+        const result = await query('DELETE FROM tickets WHERE id = $1 RETURNING *', [req.params.id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Ticket introuvable.' });
+        }
+        console.log(`[ticket-service] Ticket ${result.rows[0].code} supprimé.`);
+        res.json({ message: 'Ticket supprimé.', ticket: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur suppression ticket.' });
+    }
+});
+
 module.exports = router;

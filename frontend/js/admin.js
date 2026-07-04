@@ -161,13 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /* ── Données locales de secours (Fallback Démo) ────── */
-    let localPending = [
-        { id: '1', code: 'A7X-92B-441', email: 'jean.dupont@entreprise.fr', date: 'Il y a 5 min' },
-        { id: '2', code: 'B22-88C-190', email: 'jean.dupont@entreprise.fr', date: 'Il y a 5 min' },
-        { id: '3', code: 'RAD-314-159', email: 'marie.curie@lab.fr', date: 'Il y a 12 min' },
-        { id: '4', code: 'PCS-771-002', email: 'pierre.martin@societe.fr', date: 'Il y a 28 min' }
-    ];
+    /* ── Données locales de secours (Aucune donnée par défaut) ────── */
+    let localPending = [];
     const validesData    = [];
     const invalidesData  = [];
     const historiqueData = [];
@@ -374,6 +369,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="copy-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Copier le code">
                                         <span class="material-symbols-outlined" style="font-size:18px;">content_copy</span>
                                     </button>
+                                    <button class="delete-code-btn p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors" title="Supprimer de la BDD">
+                                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                                    </button>
                                 </div>
                                 
                                 <div class="flex gap-2 shrink-0 actions-container">
@@ -420,6 +418,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         });
+        grid.querySelectorAll('.delete-code-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const row = e.currentTarget.closest('.code-row');
+                const id = row.dataset.id;
+                if (!confirm("Voulez-vous vraiment supprimer ce ticket de la base de données ?")) return;
+                
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/tickets/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    if (res.status === 401) { logout(); return; }
+                    if (!res.ok) throw new Error();
+                    
+                    row.remove();
+                    const card = e.currentTarget.closest('.user-block-card');
+                    if (card && card.querySelectorAll('.code-row').length === 0) {
+                        card.remove();
+                    }
+                    updateNotificationBadge();
+                } catch (err) {
+                    alert("Erreur lors de la suppression du ticket.");
+                }
+            });
+        });
 
         // Email modal logic
         grid.querySelectorAll('.btn-send-mail').forEach(btn => {
@@ -427,6 +450,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = e.currentTarget.closest('.user-block-card');
                 const email = card.dataset.email;
                 const rows = card.querySelectorAll('.code-row');
+
+                // Empêcher d'ouvrir le modal s'il reste des codes non traités
+                const pendingRows = Array.from(rows).filter(r => r.dataset.status === 'pending');
+                if (pendingRows.length > 0) {
+                    alert("Veuillez d'abord Valider ou Invalider tous les tickets de cet utilisateur avant d'envoyer l'email.");
+                    return;
+                }
                 
                 document.getElementById('mail-target-email').textContent = email;
                 const mailList = document.getElementById('mail-tickets-list');
@@ -436,8 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const code = row.dataset.code;
                     const status = row.dataset.status;
                     let statusBadge = '<span class="px-2 py-1 bg-surface-container text-on-surface-variant rounded text-xs">En attente</span>';
-                    if (status === 'valid') statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Valide</span>';
-                    if (status === 'invalid') statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Invalide</span>';
+                    if (status === 'valid' || status === 'valide') statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Valide</span>';
+                    if (status === 'invalid' || status === 'invalide') statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Invalide</span>';
                     
                     mailList.innerHTML += `
                         <div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-outline-variant/50">
@@ -456,65 +486,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ── Action Valider / Invalider (API / Fallback) ───── */
+    /* ── Action Valider / Invalider (Locales d'abord !) ───── */
     async function handleTicketAction(btn, action) {
         const row = btn.closest('.code-row');
-        const id = row.dataset.id;
-        const code = row.dataset.code;
-        const email = row.closest('[data-email]')?.dataset.email || 'Inconnu';
         const actionsContainer = row.querySelector('.actions-container');
 
-        // Animation de chargement
-        const originalHTML = actionsContainer.innerHTML;
-        actionsContainer.innerHTML = '<span class="material-symbols-outlined animate-spin text-primary">sync</span>';
-
-        if (useFallback) {
-            setTimeout(() => {
-                localPending = localPending.filter(t => t.id !== id);
-                const now = new Date().toLocaleString('fr-FR');
-                const entry = { code, email, date: now };
-                if (action === 'valider') {
-                    validesData.push(entry);
-                    row.dataset.status = 'valid';
-                    row.classList.add('border-green-500', 'bg-green-50');
-                    actionsContainer.innerHTML = '<span class="text-green-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Validé</span>';
-                } else {
-                    invalidesData.push(entry);
-                    row.dataset.status = 'invalid';
-                    row.classList.add('border-red-500', 'bg-red-50');
-                    actionsContainer.innerHTML = '<span class="text-red-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Invalidé</span>';
-                }
-                historiqueData.push({ ...entry, action: action === 'valider' ? 'valide' : 'invalide' });
-            }, 300);
-            return;
+        // On change l'état uniquement localement
+        if (action === 'valider') {
+            row.dataset.status = 'valid';
+            row.classList.remove('border-red-500', 'bg-red-50');
+            row.classList.add('border-green-500', 'bg-green-50');
+            actionsContainer.innerHTML = `
+                <div class="flex gap-2">
+                    <span class="text-green-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Validé</span>
+                    <button class="btn-undo p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Annuler le choix">
+                        <span class="material-symbols-outlined" style="font-size:14px;">undo</span>
+                    </button>
+                </div>
+            `;
+        } else {
+            row.dataset.status = 'invalid';
+            row.classList.remove('border-green-500', 'bg-green-50');
+            row.classList.add('border-red-500', 'bg-red-50');
+            actionsContainer.innerHTML = `
+                <div class="flex gap-2">
+                    <span class="text-red-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Invalidé</span>
+                    <button class="btn-undo p-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Annuler le choix">
+                        <span class="material-symbols-outlined" style="font-size:14px;">undo</span>
+                    </button>
+                </div>
+            `;
         }
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/tickets/${id}/${action}`, {
-                method: 'PATCH',
-                headers: getAuthHeaders()
-            });
-            if (res.status === 401) { logout(); return; }
-            if (!res.ok) throw new Error();
-
-            // Mettre à jour visuellement la ligne
-            if (action === 'valider') {
-                row.dataset.status = 'valid';
-                row.classList.add('border-green-500', 'bg-green-50');
-                actionsContainer.innerHTML = '<span class="text-green-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Validé</span>';
-            } else {
-                row.dataset.status = 'invalid';
-                row.classList.add('border-red-500', 'bg-red-50');
-                actionsContainer.innerHTML = '<span class="text-red-600 font-bold text-sm flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Invalidé</span>';
-            }
-        } catch (err) {
-            console.error(err);
-            actionsContainer.innerHTML = originalHTML;
-            alert("Erreur lors de l'opération.");
-        }
+        // Bind le bouton Annuler pour repasser en attente
+        actionsContainer.querySelector('.btn-undo')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            row.dataset.status = 'pending';
+            row.classList.remove('border-green-500', 'bg-green-50', 'border-red-500', 'bg-red-50');
+            actionsContainer.innerHTML = `
+                <button class="btn-validate flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-on-primary font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span><span class="hidden xl:inline">Valider</span>
+                </button>
+                <button class="btn-invalidate flex items-center gap-1 px-3 py-2 rounded-lg bg-error text-on-error font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:16px;">cancel</span><span class="hidden xl:inline">Invalider</span>
+                </button>
+            `;
+            actionsContainer.querySelector('.btn-validate').addEventListener('click', () => handleTicketAction(actionsContainer.querySelector('.btn-validate'), 'valider'));
+            actionsContainer.querySelector('.btn-invalidate').addEventListener('click', () => handleTicketAction(actionsContainer.querySelector('.btn-invalidate'), 'invalider'));
+        });
     }
 
-    /* ── Listes Valides / Invalides ────────────────────── */
+    /* ── Listes Valides / Invalides (Groupées par Email !) ── */
     function refreshList(listId, data, type) {
         const el = document.getElementById(listId);
         if (!el) return;
@@ -524,29 +546,68 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Grouper par email
+        const groups = {};
+        data.forEach(t => {
+            if (!groups[t.email]) groups[t.email] = [];
+            groups[t.email].push(t);
+        });
+
         const badge = type === 'valid'
             ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Valide</span>'
             : '<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">cancel</span> Invalide</span>';
 
-        el.innerHTML = data.map((d, idx) => `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors gap-4">
-                <div class="flex flex-col gap-0.5 overflow-hidden">
-                    <span class="font-semibold text-primary uppercase tracking-wider" style="font-size:10px;">Code ${idx + 1}</span>
-                    <span class="font-mono text-lg font-bold tracking-wider text-on-surface text-ellipsis overflow-hidden whitespace-nowrap max-w-[250px] md:max-w-[400px]" title="${d.code}">${d.code}</span>
-                    <div class="flex items-center gap-2 text-on-surface-variant text-sm mt-0.5">
-                        <span class="material-symbols-outlined" style="font-size:16px;">mail</span>
-                        <span class="text-ellipsis overflow-hidden whitespace-nowrap">${d.email}</span>
+        el.innerHTML = Object.keys(groups).map(email => {
+            const userTickets = groups[email];
+            return `
+                <div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col mb-6">
+                    <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-outline">mail</span>
+                            <h3 class="font-label-md text-label-md text-on-surface font-semibold">${email}</h3>
+                        </div>
+                    </div>
+                    <div class="p-6 flex flex-col gap-4">
+                        ${userTickets.map((t, idx) => `
+                            <div class="code-row flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                                <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1}</span>
+                                    <div class="code-value font-headline-md tracking-widest text-on-surface font-mono overflow-hidden text-ellipsis whitespace-nowrap" title="${t.code}">${t.code}</div>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <span class="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-lg border border-outline-variant/50">${new Date(t.updatedAt || t.date).toLocaleString('fr-FR')}</span>
+                                    ${badge}
+                                    <button class="delete-code-btn p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors" data-id="${t.id}" title="Supprimer de la BDD">
+                                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
-                <div class="flex items-center gap-4 shrink-0">
-                    <span class="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-lg border border-outline-variant/50">${new Date(d.updatedAt || d.date).toLocaleString('fr-FR')}</span>
-                    ${badge}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+
+        el.querySelectorAll('.delete-code-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (!confirm("Voulez-vous vraiment supprimer ce ticket de la base de données ?")) return;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/tickets/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    if (res.status === 401) { logout(); return; }
+                    if (!res.ok) throw new Error();
+                    refreshCurrentTab();
+                } catch (err) {
+                    alert("Erreur lors de la suppression du ticket.");
+                }
+            });
+        });
     }
 
-    /* ── Historique ────────────────────────────────────── */
+    /* ── Historique (Groupé par Email !) ────────────────── */
     function refreshHistorique(data) {
         const el = document.getElementById('historique-list');
         if (!el) return;
@@ -556,27 +617,70 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        el.innerHTML = data.map((d, idx) => {
-            const badge = d.action === 'valide'
-                ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Validé</span>'
-                : '<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">cancel</span> Invalidé</span>';
+        // Grouper par email
+        const groups = {};
+        data.forEach(t => {
+            if (!groups[t.email]) groups[t.email] = [];
+            groups[t.email].push(t);
+        });
+
+        el.innerHTML = Object.keys(groups).map(email => {
+            const userActions = groups[email];
             return `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors gap-4">
-                    <div class="flex flex-col gap-0.5 overflow-hidden">
-                        <span class="font-semibold text-primary uppercase tracking-wider" style="font-size:10px;">Code ${idx + 1}</span>
-                        <span class="font-mono text-lg font-bold tracking-wider text-on-surface text-ellipsis overflow-hidden whitespace-nowrap max-w-[250px] md:max-w-[400px]" title="${d.code}">${d.code}</span>
-                        <div class="flex items-center gap-2 text-on-surface-variant text-sm mt-0.5">
-                            <span class="material-symbols-outlined" style="font-size:16px;">mail</span>
-                            <span class="text-ellipsis overflow-hidden whitespace-nowrap">${d.email}</span>
+                <div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col mb-6">
+                    <div class="bg-surface-container-low px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-outline">mail</span>
+                            <h3 class="font-label-md text-label-md text-on-surface font-semibold">${email}</h3>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4 shrink-0">
-                        <span class="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-lg border border-outline-variant/50">${new Date(d.date).toLocaleString('fr-FR')}</span>
-                        ${badge}
+                    <div class="p-6 flex flex-col gap-4">
+                        ${userActions.map((d, idx) => {
+                            const badge = d.action === 'valide'
+                                ? '<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">check_circle</span> Validé</span>'
+                                : '<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold flex items-center gap-1"><span class="material-symbols-outlined" style="font-size:14px;">cancel</span> Invalidé</span>';
+                            return `
+                                <div class="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
+                                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                                        <span class="text-xs font-semibold text-primary uppercase tracking-wider" style="font-size:10px;">Code ${idx + 1}</span>
+                                        <span class="font-mono text-lg font-bold tracking-wider text-on-surface text-ellipsis overflow-hidden whitespace-nowrap" title="${d.code}">${d.code}</span>
+                                    </div>
+                                    <div class="flex items-center gap-4 shrink-0">
+                                        <span class="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-lg border border-outline-variant/50">${new Date(d.date).toLocaleString('fr-FR')}</span>
+                                        ${badge}
+                                        <button class="delete-code-btn p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors" data-id="${d.ticket_id}" title="Supprimer de la BDD">
+                                            <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
         }).join('');
+
+        el.querySelectorAll('.delete-code-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (!id || id === 'null') {
+                    alert("Ce ticket est déjà supprimé de la base de données principale.");
+                    return;
+                }
+                if (!confirm("Voulez-vous vraiment supprimer ce ticket de la base de données ?")) return;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/tickets/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    if (res.status === 401) { logout(); return; }
+                    if (!res.ok) throw new Error();
+                    refreshCurrentTab();
+                } catch (err) {
+                    alert("Erreur lors de la suppression du ticket.");
+                }
+            });
+        });
     }
 
     /* ── Rendu Fallback Local ──────────────────────────── */
@@ -615,8 +719,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.querySelector(`.user-block-card[data-email="${email}"]`);
             const rows = card ? card.querySelectorAll('.code-row') : [];
             const tickets = Array.from(rows).map(row => ({
+                id: row.dataset.id,
                 code: row.dataset.code,
-                status: row.dataset.status
+                status: row.dataset.status // 'valid' | 'invalid'
             }));
 
             if (useFallback) {
@@ -661,12 +766,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         btn.disabled = false;
                         btn.classList.remove('bg-green-600', 'text-white');
                         btn.classList.add('bg-primary', 'text-on-primary');
-                        loadDataForTab('recus');
+                        if (card) card.remove(); // Supprime complètement le bloc de l'utilisateur de "Codes Reçus"
+                        refreshCurrentTab();
                     }, 1000);
                 })
                 .catch(err => {
                     console.error(err);
-                    alert("Impossible d'envoyer l'email via l'API.");
+                    alert("Impossible d'envoyer l'email ou de mettre à jour le statut via l'API.");
                     btn.innerHTML = originalHTML;
                     btn.disabled = false;
                 });

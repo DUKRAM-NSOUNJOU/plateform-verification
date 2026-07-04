@@ -285,18 +285,46 @@ router.post('/notify-submission', async (req, res) => {
 
 /* ── POST /send-status-email (protégé) ────────────────────── */
 router.post('/send-status-email', requireAuth, async (req, res) => {
-    const { email, tickets } = req.body;
+    const { email, tickets } = req.body; // tickets: [{ id, code, status: 'valid' | 'invalid' }]
     if (!email || !tickets || !tickets.length) {
         return res.status(400).json({ error: 'L\'email et les tickets sont requis.' });
     }
 
     try {
-        // Envoyer d'abord l'email de résultat à l'utilisateur
+        // 1. Envoyer d'abord l'email de résultat à l'utilisateur
         const result = await sendStatusEmail(email, tickets);
-        res.json({ success: true, message: `Email envoyé à ${email}`, result });
+
+        // 2. Si le mail est envoyé avec succès, on met à jour chaque ticket en base
+        for (const t of tickets) {
+            const finalStatut = (t.status === 'valid' || t.status === 'valide') ? 'valide' : 'invalide';
+            
+            // Modifier le statut du ticket dans ticket-service
+            await callTicketService(`/${t.id}`, 'PATCH', { statut: finalStatut });
+
+            // Enregistrer dans l'historique de l'admin-service
+            await query(
+                `INSERT INTO historique (ticket_id, email, code, action, admin_id, admin_email)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [t.id, email, t.code, finalStatut, req.admin.id, req.admin.email]
+            );
+        }
+
+        res.json({ success: true, message: `Email envoyé et tickets mis à jour pour ${email}`, result });
     } catch (err) {
-        console.error('[admin-service] Erreur envoi email:', err.message);
-        res.status(500).json({ error: 'Impossible d\'envoyer l\'email pour le moment.' });
+        console.error('[admin-service] Erreur envoi email ou BDD:', err.message || err);
+        res.status(500).json({ error: 'Impossible de finaliser l\'opération.' });
+    }
+});
+
+/* ── DELETE /tickets/:id (protégé) ───────────────────────────── */
+router.delete('/tickets/:id', requireAuth, async (req, res) => {
+    try {
+        const data = await callTicketService(`/${req.params.id}`, 'DELETE');
+        console.log(`[admin-service] 🗑 Ticket ${req.params.id} supprimé par ${req.admin.email}`);
+        res.json({ message: 'Ticket supprimé.', ticket: data.ticket });
+    } catch (err) {
+        console.error('[admin-service] Erreur suppression:', err);
+        res.status(err.status || 503).json({ error: err.error || 'Erreur lors de la suppression.' });
     }
 });
 
