@@ -11,7 +11,8 @@ let mg;
 if (apiKey && apiKey !== 'key-met_ta_cle_api_mailgun_ici_plus_tard') {
     mg = mailgun.client({
         username: 'api',
-        key: apiKey
+        key: apiKey,
+        url: process.env.MAILGUN_URL || 'https://api.mailgun.net'
     });
     console.log('[Mailer] Mailgun configuré.');
 } else {
