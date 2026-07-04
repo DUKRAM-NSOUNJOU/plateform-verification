@@ -17,6 +17,7 @@ const PRECACHE_ASSETS = [
     '/admin.html',
     '/offline.html',
     '/manifest.json',
+    '/admin-manifest.json',
     '/images/icon-192.png',
     '/images/icon-512.png',
     '/css/admin.css',
