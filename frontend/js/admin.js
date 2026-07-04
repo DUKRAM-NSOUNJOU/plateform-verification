@@ -176,9 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoRefreshTimer = null;
     const activeTab = () => document.querySelector('.tab-btn.active')?.dataset.tab || 'analytics';
 
+    /* ── Refresh Button Logic ──────────────────────────── */
+    const refreshBtn = document.getElementById('refresh-data-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('.material-symbols-outlined');
+            icon.classList.add('animate-spin');
+            refreshCurrentTab().finally(() => {
+                setTimeout(() => icon.classList.remove('animate-spin'), 500);
+            });
+        });
+    }
+
     /* ── Rafraîchir l'onglet actif ─────────────────────── */
-    function refreshCurrentTab() {
-        loadDataForTab(activeTab());
+    async function refreshCurrentTab() {
+        await loadDataForTab(activeTab());
         updateNotificationBadge();
     }
 
