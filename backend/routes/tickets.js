@@ -37,7 +37,7 @@ router.post('/verify', (req, res) => {
     const newTickets = codes.map(code => ({
         id:        uuidv4(),
         email:     email.toLowerCase().trim(),
-        code:      code.toUpperCase().trim(),
+        code:      code.trim(),
         statut:    'en_attente',        // en_attente | valide | invalide
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
