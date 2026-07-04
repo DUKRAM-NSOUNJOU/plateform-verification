@@ -33,7 +33,7 @@ router.post('/verify', async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const normalizedCodes = codes
-        .map(c => c.trim().toUpperCase())
+        .map(c => c.trim())
         .filter(c => c.length > 0);
 
     if (normalizedCodes.length === 0) {

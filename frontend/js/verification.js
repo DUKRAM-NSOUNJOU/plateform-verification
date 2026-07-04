@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const email   = document.getElementById('email').value.trim();
             const inputs  = container.querySelectorAll('input[type="text"]');
             const tickets = Array.from(inputs)
-                .map(i => i.value.trim().toUpperCase())
+                .map(i => i.value.trim())
                 .filter(v => v !== '');
 
             if (tickets.length === 0) {
