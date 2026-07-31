@@ -18,7 +18,7 @@ const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:300
 
 /* ── POST /verify ──────────────────────────────────────────────── */
 router.post('/verify', async (req, res) => {
-    const { email, tickets: codes } = req.body;
+    const { email, recharge, montant, devise, tickets: codes } = req.body;
 
     if (!email || !Array.isArray(codes) || codes.length === 0) {
         return res.status(400).json({
@@ -47,11 +47,11 @@ router.post('/verify', async (req, res) => {
         for (const code of normalizedCodes) {
             const id = uuidv4();
             await query(
-                `INSERT INTO tickets (id, email, code, statut)
-                 VALUES ($1, $2, $3, 'en_attente')`,
-                [id, normalizedEmail, code]
+                `INSERT INTO tickets (id, email, recharge, montant, devise, code, statut)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'en_attente')`,
+                [id, normalizedEmail, recharge, montant, devise, code]
             );
-            inserted.push({ id, code, statut: 'en_attente' });
+            inserted.push({ id, code, recharge, montant, devise, statut: 'en_attente' });
         }
         await query('COMMIT');
 

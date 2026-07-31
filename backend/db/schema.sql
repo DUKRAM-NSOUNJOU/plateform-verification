@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS admins (
 CREATE TABLE IF NOT EXISTS tickets (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email      TEXT NOT NULL,
+    recharge   TEXT,
+    montant    NUMERIC,
+    devise     TEXT,
     code       TEXT NOT NULL,
     statut     TEXT NOT NULL DEFAULT 'en_attente',  -- en_attente | valide | invalide
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

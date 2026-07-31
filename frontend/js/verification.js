@@ -44,7 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email   = document.getElementById('email').value.trim();
+            const recharge = document.getElementById('recharge').value;
+            const montant  = document.getElementById('montant').value;
+            const devise   = document.getElementById('devise').value;
+            const email    = document.getElementById('email').value.trim();
+
             const inputs  = container.querySelectorAll('input[type="text"]');
             const tickets = Array.from(inputs)
                 .map(i => i.value.trim())
@@ -67,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE_URL}/api/tickets/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, tickets })
+                    body: JSON.stringify({ recharge, montant, devise, email, tickets })
                 });
 
                 const data = await res.json();
@@ -76,6 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     showSuccessModal();
                     // Reset inputs
                     inputs.forEach(i => i.value = '');
+                    document.getElementById('recharge').value = '';
+                    document.getElementById('montant').value = '';
+                    document.getElementById('devise').value = '';
+                    document.getElementById('email').value = '';
                 } else {
                     showAlert(data.error || 'Une erreur est survenue.', 'error');
                 }
@@ -83,12 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('API Gateway injoignable, bascule en mode démo hors-ligne:', err);
                 showSuccessModal();
                 inputs.forEach(i => i.value = '');
+                document.getElementById('recharge').value = '';
+                document.getElementById('montant').value = '';
+                document.getElementById('devise').value = '';
+                document.getElementById('email').value = '';
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `
                     <span class="material-symbols-outlined"
                           style="font-variation-settings: 'FILL' 1;">verified</span>
-                    Vérifier maintenant
+                    Valider
                 `;
             }
         });

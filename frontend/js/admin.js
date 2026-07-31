@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ── Bouton rafraîchir ─────────────────────────────── */
     document.getElementById('refresh-tickets-btn')?.addEventListener('click', refreshCurrentTab);
+    document.getElementById('recharge-filter')?.addEventListener('change', refreshCurrentTab);
 
     /* ── Auto-rafraîchissement toutes les 30s ──────────── */
     function startAutoRefresh() {
@@ -327,7 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const counter = document.getElementById('pending-count');
         if (!grid) return;
 
-        if (!tickets || tickets.length === 0) {
+        const filterVal = document.getElementById('recharge-filter')?.value || 'ALL';
+        let filteredTickets = tickets;
+        if (filterVal !== 'ALL') {
+            filteredTickets = tickets.filter(t => t.recharge === filterVal);
+        }
+
+        if (!filteredTickets || filteredTickets.length === 0) {
             grid.innerHTML = '<div class="col-span-full py-12 text-center text-[#444653]">Aucun ticket en attente de traitement.</div>';
             if (counter) counter.textContent = '0 ticket en attente';
             return;
@@ -335,13 +342,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Grouper les tickets par email
         const groups = {};
-        tickets.forEach(t => {
+        filteredTickets.forEach(t => {
             if (!groups[t.email]) groups[t.email] = [];
             groups[t.email].push(t);
         });
 
         if (counter) {
-            counter.textContent = `${tickets.length} ticket${tickets.length > 1 ? 's' : ''} en attente`;
+            counter.textContent = `${filteredTickets.length} ticket${filteredTickets.length > 1 ? 's' : ''} en attente`;
         }
 
         grid.innerHTML = Object.keys(groups).map(email => {
@@ -355,10 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="p-6 flex-1 flex flex-col gap-4 user-card-body">
-                        ${userTickets.map((t, idx) => `
+                        ${userTickets.map((t, idx) => {
+                            const deviseSymbol = t.devise === 'euro' ? '€' : t.devise === 'dollar' ? '$' : t.devise === 'franc suisse' ? 'CHF' : (t.devise || '');
+                            const rechargeText = t.recharge ? `${t.recharge} (${t.montant} ${deviseSymbol})` : '';
+                            return `
                             <div class="code-row flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50 transition-all" data-id="${t.id}" data-code="${t.code}" data-status="pending">
                                 <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1}</span>
+                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1} ${rechargeText ? '— ' + rechargeText : ''}</span>
                                     <div class="code-value font-headline-md tracking-widest text-on-surface font-mono overflow-hidden text-ellipsis whitespace-nowrap max-w-[140px] sm:max-w-[200px]" title="${t.code}">${t.code}</div>
                                 </div>
                                 
@@ -383,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                     <div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex justify-end">
                         <button class="btn-send-mail flex items-center gap-2 px-6 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
@@ -568,10 +578,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="p-6 flex flex-col gap-4">
-                        ${userTickets.map((t, idx) => `
+                        ${userTickets.map((t, idx) => {
+                            const deviseSymbol = t.devise === 'euro' ? '€' : t.devise === 'dollar' ? '$' : t.devise === 'franc suisse' ? 'CHF' : (t.devise || '');
+                            const rechargeText = t.recharge ? `${t.recharge} (${t.montant} ${deviseSymbol})` : '';
+                            return `
                             <div class="code-row flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50">
                                 <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1}</span>
+                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1} ${rechargeText ? '— ' + rechargeText : ''}</span>
                                     <div class="code-value font-headline-md tracking-widest text-on-surface font-mono overflow-hidden text-ellipsis whitespace-nowrap" title="${t.code}">${t.code}</div>
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
@@ -582,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
             `;
