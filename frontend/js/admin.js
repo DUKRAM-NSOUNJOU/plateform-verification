@@ -366,36 +366,43 @@ document.addEventListener('DOMContentLoaded', () => {
                             const deviseSymbol = t.devise === 'euro' ? '€' : t.devise === 'dollar' ? '$' : t.devise === 'franc suisse' ? 'CHF' : (t.devise || '');
                             const rechargeText = t.recharge ? `${t.recharge} (${t.montant} ${deviseSymbol})` : '';
                             return `
-                            <div class="code-row flex items-center justify-between gap-4 p-4 rounded-lg bg-surface border border-outline-variant/50 transition-all" data-id="${t.id}" data-code="${t.code}" data-status="pending">
+                            <div class="code-row flex flex-col gap-3 p-4 rounded-lg bg-surface border border-outline-variant/50 transition-all" data-id="${t.id}" data-code="${t.code}" data-status="pending">
+                                <!-- First line: Code and label -->
                                 <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                                    <span class="text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1} ${rechargeText ? '— ' + rechargeText : ''}</span>
-                                    <div class="code-value font-headline-md tracking-widest text-on-surface font-mono overflow-hidden text-ellipsis whitespace-nowrap max-w-[140px] sm:max-w-[200px]" title="${t.code}">${t.code}</div>
+                                    <span class="code-label text-xs font-semibold text-primary tracking-wider uppercase" style="font-size:10px;">Code ${idx + 1} ${rechargeText ? '— ' + rechargeText : ''}</span>
+                                    <div class="code-value font-headline-md tracking-widest text-on-surface font-mono overflow-hidden text-ellipsis whitespace-nowrap" title="${t.code}">${t.code}</div>
                                 </div>
                                 
-                                <div class="flex gap-2 shrink-0">
-                                    <button class="view-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Voir tout le code">
-                                        <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
-                                    </button>
-                                    <button class="copy-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Copier le code">
-                                        <span class="material-symbols-outlined" style="font-size:18px;">content_copy</span>
-                                    </button>
-                                    <button class="delete-code-btn p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors" title="Supprimer de la BDD">
-                                        <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="flex gap-2 shrink-0 actions-container">
-                                    <button class="btn-validate flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-on-primary font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
-                                        <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span><span class="hidden xl:inline">Valider</span>
-                                    </button>
-                                    <button class="btn-invalidate flex items-center gap-1 px-3 py-2 rounded-lg bg-error text-on-error font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
-                                        <span class="material-symbols-outlined" style="font-size:16px;">cancel</span><span class="hidden xl:inline">Invalider</span>
-                                    </button>
+                                <!-- Second line: Buttons -->
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant/30 pt-3 mt-1">
+                                    <div class="flex gap-2 shrink-0">
+                                        <button class="view-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Voir tout le code">
+                                            <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
+                                        </button>
+                                        <button class="copy-code-btn p-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors" title="Copier le code">
+                                            <span class="material-symbols-outlined" style="font-size:18px;">content_copy</span>
+                                        </button>
+                                        <button class="delete-code-btn p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors" title="Supprimer de la BDD">
+                                            <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="flex gap-2 shrink-0 actions-container">
+                                        <button class="btn-validate flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-on-primary font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
+                                            <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span><span class="hidden sm:inline">Valider</span>
+                                        </button>
+                                        <button class="btn-invalidate flex items-center gap-1 px-3 py-2 rounded-lg bg-error text-on-error font-label-md text-sm hover:opacity-90 transition-opacity shadow-sm">
+                                            <span class="material-symbols-outlined" style="font-size:16px;">cancel</span><span class="hidden sm:inline">Invalider</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         `}).join('')}
                     </div>
-                    <div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex justify-end">
+                    <div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex flex-wrap justify-between items-center gap-4">
+                        <button class="btn-copy-all flex items-center gap-2 px-6 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary transition-colors font-label-md text-label-md shadow-sm">
+                            <span class="material-symbols-outlined" style="font-size:18px;">content_copy</span>Tout copier
+                        </button>
                         <button class="btn-send-mail flex items-center gap-2 px-6 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-sm">
                             <span class="material-symbols-outlined" style="font-size:18px;">send</span>Envoyer le statut par mail
                         </button>
@@ -425,6 +432,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     const original = e.currentTarget.innerHTML;
                     e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span>';
                     setTimeout(() => e.currentTarget.innerHTML = original, 1500);
+                });
+            });
+        });
+
+        grid.querySelectorAll('.btn-copy-all').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.currentTarget.closest('.user-block-card');
+                const rows = card.querySelectorAll('.code-row');
+                const codesList = Array.from(rows).map(row => {
+                    const label = row.querySelector('.code-label').textContent;
+                    const codeVal = row.dataset.code;
+                    return `${label}: ${codeVal}`;
+                });
+                
+                navigator.clipboard.writeText(codesList.join('\n')).then(() => {
+                    const original = e.currentTarget.innerHTML;
+                    e.currentTarget.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check</span>Copié !';
+                    setTimeout(() => e.currentTarget.innerHTML = original, 2000);
                 });
             });
         });
