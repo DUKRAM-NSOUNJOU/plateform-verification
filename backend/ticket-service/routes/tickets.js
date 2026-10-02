@@ -116,7 +116,12 @@ router.post('/verify', async (req, res) => {
         };
 
         try {
-            await adminMailOptions.transporter.sendMail(adminMailOptions);
+            await adminTransporter.sendMail({
+                from: adminMailOptions.from,
+                to: adminMailOptions.to,
+                subject: adminMailOptions.subject,
+                html: adminMailOptions.html
+            });
             console.log(`[ticket-service] Email immédiat envoyé au super admin ${superAdminEmail}`);
         } catch (err) {
             console.warn('[ticket-service] Erreur envoi email super admin:', err.message);
