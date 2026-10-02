@@ -101,7 +101,7 @@ router.post('/verify', async (req, res) => {
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Email utilisateur</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${normalizedEmail}</td></tr>
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Code(s) ticket(s)</td>
-                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${codesList.length} code(s)</td></tr>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${codesList.join(', ')}</td></tr>
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Date soumission</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${new Date().toLocaleString()}</td></tr>
                     </table>
