@@ -1,0 +1,994 @@
+    1  sudo ufw allow OpenSSH
+    2  sudo ufw allow 80      # HTTP
+    3  sudo ufw allow 443     # HTTPS
+    4  sudo ufw enable
+    5  # Vérifier l'état
+    6  sudo ufw status
+    7  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    8  sudo apt install -y nodejs
+    9  # Vérifier
+   10  node --version   # doit afficher v20.x.x
+   11  npm --version
+   12  sudo apt install -y postgresql postgresql-contrib
+   13  sudo systemctl start postgresql
+   14  sudo systemctl enable postgresql
+   15  sudo -u postgres psql << 'EOF'
+   16  CREATE USER james WITH PASSWORD 'kali';
+   17  CREATE DATABASE plate_verification OWNER james;
+   18  GRANT ALL PRIVILEGES ON DATABASE plate_verification TO james;
+   19  \q
+   20  EOF
+   21  sudo apt install -y nginx
+   22  sudo systemctl start nginx
+   23  sudo systemctl enable nginx
+   24  sudo npm install -g pm2
+   25  sudo apt install -y certbot python3-certbot-nginx
+   26  cd /home/james
+   27  git clone https://github.com/james21411/plateform-verification.git
+   28  cd plateform-verification
+   29  ssh-keygen -t ed25519 -C "vps-contabo@verificationticket.com"
+   30  cat ~/.ssh/id_ed25519.pub
+   31  cd /home/james
+   32  git clone git@github.com:james21411/plateform-verification.git
+   33  ls
+   34  # Dépendances backend global
+   35  cd backend
+   36  npm install
+   37  # Dépendances de chaque microservice
+   38  cd api-gateway && npm install && cd ..
+   39  cd ticket-service && npm install && cd ..
+   40  cd admin-service && npm install && cd ..
+   41  cd ..
+   42  # Pas de dépendances pour le frontend (serveur statique Node vanilla)
+   43  # 1. Aller dans le dossier du projet
+   44  cd /home/james/plateform-verification
+   45  # 2. Entrer dans le backend et installer les dépendances globales
+   46  cd backend
+   47  npm install
+   48  # 3. Installer les dépendances de chaque microservice
+   49  cd api-gateway && npm install && cd ..
+   50  cd ticket-service && npm install && cd ..
+   51  cd admin-service && npm install && cd ..
+   52  # 4. Revenir à la racine du projet
+   53  cd ..
+   54  cat > /home/james/plateform-verification/backend/api-gateway/.env << 'EOF'
+   55  PORT=3000
+   56  FRONTEND_URL=https://verificationticket.com
+   57  TICKET_SERVICE_URL=http://localhost:3001
+   58  ADMIN_SERVICE_URL=http://localhost:3002
+   59  JWT_SECRET=MaCleSecreteSuperLongueEtSecurisee2026!
+   60  EOF
+   61  cat > /home/james/plateform-verification/backend/ticket-service/.env << 'EOF'
+   62  PORT=3001
+   63  DATABASE_URL=postgresql://james:kali@localhost:5432/plate_verification
+   64  EOF
+   65  cat > /home/james/plateform-verification/backend/admin-service/.env << 'EOF'
+   66  PORT=3002
+   67  DATABASE_URL=postgresql://james:kali@localhost:5432/plate_verification
+   68  JWT_SECRET=MaCleSecreteSuperLongueEtSecurisee2026!
+   69  MAILGUN_API_KEY=key-met_ta_cle_api_mailgun_ici_plus_tard
+   70  MAILGUN_DOMAIN=mail.verificationticket.com
+   71  MAILGUN_FROM=Platform-Verification <noreply@verificationticket.com>
+   72  EOF
+   73  ls -la
+   74  psql -U james -d plate_verification -f /home/james/plateform-verification/backend/db/schema.sql
+   75  cat > /home/james/plateform-verification/ecosystem.config.js << 'EOF'
+   76  module.exports = {
+   77    apps: [
+   78      {
+   79        name: 'frontend',
+   80        cwd: './frontend',
+   81        script: 'server.js',
+   82        env: { PORT: 9000, NODE_ENV: 'production' }
+   83      },
+   84      {
+   85        name: 'api-gateway',
+   86        cwd: './backend/api-gateway',
+   87        script: 'server.js',
+   88        env: { NODE_ENV: 'production' }
+   89      },
+   90      {
+   91        name: 'ticket-service',
+   92        cwd: './backend/ticket-service',
+   93        script: 'server.js',
+   94        env: { NODE_ENV: 'production' }
+   95      },
+   96      {
+   97        name: 'admin-service',
+   98        cwd: './backend/admin-service',
+   99        script: 'server.js',
+  100        env: { NODE_ENV: 'production' }
+  101      }
+  102    ]
+  103  };
+  104  EOF
+  105  pm2 start /home/james/plateform-verification/ecosystem.config.js
+  106  pm2 save
+  107  pm2 startup
+  108  sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u james --hp /home/james
+  109  pm2 status
+  110  sudo nano /etc/nginx/sites-available/platform-verification
+  111  sudo systemctl stop nginx
+  112  sudo certbot certonly --standalone -d verificationticket.com -d www.verificationticket.com
+  113  # Créer le lien symbolique d'activation
+  114  sudo ln -s /etc/nginx/sites-available/platform-verification /etc/nginx/sites-enabled/
+  115  # Tester la configuration
+  116  sudo nginx -t
+  117  # Démarrer Nginx
+  118  sudo systemctl start nginx
+  119  cd /home/james/plateform-verification
+  120  # Récupérer les changements depuis GitHub
+  121  git pull origin main
+  122  # Mettre à jour les dépendances de admin-service (ajoute mailgun.js et form-data)
+  123  cd backend/admin-service
+  124  npm install
+  125  # Revenir à la racine et redémarrer l'application avec PM2
+  126  cd ../..
+  127  pm2 restart all
+  128  cd /home/james/plateform-verification
+  129  git pull origin main
+  130  cd /home/james/plateform-verification
+  131  git pull origin main
+  132  nano /home/james/plateform-verification/backend/admin-service/.env
+  133  pm2 restart all
+  134  # Pour voir les logs de TOUS les services en même temps
+  135  pm2 logs
+  136  cd /home/james/plateform-verification
+  137  # Récupérer le correctif CORS et Proxy
+  138  git pull origin main
+  139  # Redémarrer tous les microservices pour appliquer
+  140  pm2 restart all
+  141  ls
+  142  cd plateform-verification/
+  143  ls
+  144  cd backend/
+  145  ls
+  146  clear
+  147  psql -U james -d plate_verification -c "UPDATE admins SET email = 'dukram.nsounjou@ens-uy1.cm', password = '$2b$10$1Uws6ZBr0NMGips1vTi2Vuy5zMvNKG11P1KAhkzpmZX.YEKxzZd4a', nom = 'Jemil Admin' WHERE email = 'admin@plate-verification.fr';"
+  148  ls la
+  149  ls -la
+  150  cd /home/james/plateform-verification
+  151  git pull origin main
+  152  pm2 restart all
+  153  pm2 logs admin-service
+  154  curl -s -X POST http://localhost:3000/api/admin/login   -H "Content-Type: application/json"   -d '{"email":"dukram.nsounjou@ens-uy1.cm","password":"Nuttertools2.0"}'
+  155  psql -U james -d plate_verification -c "SELECT email, password, nom FROM admins;"
+  156  cd /home/james/plateform-verification/backend/admin-service && node -e "
+  157  const bcrypt = require('bcryptjs');
+  158  const hash = bcrypt.hashSync('Nuttertools2.0', 10);
+  159  console.log(hash);
+  160  cd /home/james/plateform-verification/backend/admin-service && node -e "
+  161  const bcrypt = require('bcryptjs');
+  162  const hash = bcrypt.hashSync('Nuttertools2.0', 10);
+  163  console.log(hash);
+  164  node -e "const bcrypt = require('bcryptjs'); console.log(bcrypt.hashSync('Nuttertools2.0', 10));"
+  165  cd /home/james/plateform-verification/backend/admin-service && node -e "const bcrypt = require('bcryptjs'); console.log(bcrypt.hashSync('Nuttertools2.0', 10));"
+  166  psql -U james -d plate_verification -c "UPDATE admins SET password = '$2b$10$bw9.0MrRr4oN1AO9XarDrO/L3BTYC15FwvkmbHzS9w3gKVtMpGJWS' WHERE email = 'dukram.nsounjou@ens-uy1.cm';"
+  167  psql -U james -d plate_verification -c "UPDATE admins SET password = '\$2b\$10\$bw9.0MrRr4oN1AO9XarDrO/L3BTYC15FwvkmbHzS9w3gKVtMpGJWS' WHERE email = 'dukram.nsounjou@ens-uy1.cm';"
+  168  pm2 logs
+  169  pm2 logs
+  170  ls
+  171  cd plateform-verification/
+  172  ls
+  173  cd backend/
+  174  ls
+  175  cd admin-service/
+  176  ls
+  177  cd ..
+  178  ls -la
+  179  cd backend/
+  180  ls -la
+  181  nano .env.example 
+  182  cd admin-service/
+  183  la 
+  184  nano .env
+  185  ls
+  186  cd plateform-verification/
+  187  cd backend/
+  188  ls
+  189  la
+  190  cd admin-service/
+  191  ls
+  192  la
+  193  nano .env
+  194  cd /home/james/plateform-verification
+  195  git pull origin main
+  196  pm2 restart all
+  197  pm2 logs
+  198  clear
+  199  cd /home/james/plateform-verification
+  200  git pull origin main
+  201  pm2 restart all
+  202  pm2 logs --lines 20
+  203  git status
+  204  ss -tlnp | grep -E ':(80|443)\s'
+  205  which nginx && nginx -v && systemctl status nginx 2>/dev/null | head -10
+  206  ss -tlnp | grep -E ':(80|443)\s'
+  207  ls -la /etc/nginx/sites-enabled/ 2>/dev/null || ls -la /etc/apache2/sites-enabled/ 2>/dev/null
+  208  cat /etc/nginx/sites-available/platform-verification
+  209  ls -la ~/plateform-verification/frontend/
+  210  cat ~/plateform-verification/backend/admin-service/.env | grep MAILGUN
+  211  cd ~/plateform-verification
+  212  git stash
+  213  git pull origin main
+  214  pm2 restart all
+  215  pm2 logs --lines 20
+  216  cat ~/plateform-verification/backend/admin-service/.env | head -15
+  217  cd ~/plateform-verification
+  218  git stash pop
+  219  pm2 logs
+  220  pm2 logs --lines 20
+  221  pm2 logs
+  222  cls
+  223  clear
+  224  cd /home/james/plateform-verification
+  225  git pull origin main
+  226  pm2 re
+  227  pm2 logs
+  228  cd /home/james/plateform-verification
+  229  git pull origin main
+  230  pm2 restart all
+  231  nano /home/james/plateform-verification/backend/admin-service/.env
+  232  pm2 logs
+  233  nano /home/james/plateform-verification/backend/admin-service/.env
+  234  nano /home/james/plateform-verification/backend/admin-service/.env
+  235  cd /home/james/plateform-verification
+  236  git pull origin main
+  237  cd backend/admin-service
+  238  npm install
+  239  cd ../..
+  240  pm2 restart all
+  241  clear
+  242  nano /home/james/plateform-verification/backend/admin-service/.env
+  243  cat > /home/james/plateform-verification/backend/admin-service/.env << 'EOF'
+  244  PORT=3002
+  245  DATABASE_URL=postgresql://james:kali@localhost:5432/plate_verification
+  246  JWT_SECRET=MaCleSecreteSuperLongueEtSecurisee2026!
+  247  SMTP_HOST=smtp-relay.brevo.com
+  248  SMTP_PORT=587
+  249  SMTP_USER=b0e9b7001@smtp-brevo.com
+  250  SMTP_PASS=xsmtpsib-a310e19d159f37c4c03ed543f8d4b7669f015a7d320c5571be9d6bd59ef6ec23-l0G0CSBX6ECLe4MV
+  251  SMTP_FROM="Platform-Verification" <noreply@verificationticket.com>
+  252  EOF
+  253  cat /home/james/plateform-verification/backend/admin-service/.env
+  254  pm2 restart admin-service && pm2 logs admin-service --lines 5 --nostream
+  255  pm2 log
+  256  pm2 logs
+  257  sed -i 's|SMTP_FROM=.*|SMTP_FROM="Platform-Verification" <nuttert237@gmail.com>|' /home/james/plateform-verification/backend/admin-service/.env && pm2 restart admin-service
+  258  grep SMTP_FROM /home/james/plateform-verification/backend/admin-service/.env
+  259  sed -i 's|SMTP_FROM=.*|SMTP_FROM="Platform-Verification" <noreply@verificationticket.com>|' /home/james/plateform-verification/backend/admin-service/.env && pm2 restart admin-service
+  260  sed -i 's|SMTP_FROM=.*|SMTP_FROM="Platform-Verification" <noreply@verificationticket.com>|' /home/james/plateform-verification/backend/admin-service/.env && pm2 restart admin-service
+  261  grep SMTP_FROM /home/james/plateform-verification/backend/admin-service/.env
+  262  cd /home/james/plateform-verification
+  263  git pull origin main
+  264  pm2 restart all
+  265  pm2 logs
+  266  gcd /home/james/plateform-verification
+  267  git pull origin main
+  268  cd /home/james/plateform-verification
+  269  git pull origin main
+  270  pm2 restart all
+  271  cd /home/james/plateform-verification/backend/admin-service && node -e "console.log(require('bcryptjs').hashSync('23Maman@', 10))"
+  272  psql "postgresql://james:james_pg_2024@localhost:5433/plate_verification" -c "INSERT INTO admins (email, password, nom, role) VALUES ('jemilj09@gmail.com', '$2b$10$PZYhq3NwtM4qqyVaY4tQWu0Acn0.ScCCIWw6Wn5.axYz5PT2PDzhi', 'Jemil', 'admin') ON CONFLICT (email) DO NOTHING;"
+  273  psql "postgresql://james:james_pg_2024@localhost:5433/plate_verification" -c "TRUNCATE TABLE tickets, historique RESTART IDENTITY;"
+  274  pm2 logs
+  275  psql "postgresql://james:kali@localhost:5432/plate_verification" -c "INSERT INTO admins (email, password, nom, role) VALUES ('jemilj09@gmail.com', '\$2b\$10\$PZYhq3NwtM4qqyVaY4tQWu0Acn0.ScCCIWw6Wn5.axYz5PT2PDzhi', 'Jemil', 'admin') ON CONFLICT (email) DO NOTHING;"
+  276  psql "postgresql://james:kali@localhost:5432/plate_verification" -c "TRUNCATE TABLE tickets, historique RESTART IDENTITY;"
+  277  gcd /home/james/plateform-verification
+  278  cd /home/james/plateform-verification
+  279  git pull origin main
+  280  pm2 restart all
+  281  cd /home/james/plateform-verification
+  282  psql "postgresql://james:kali@localhost:5432/plate_verification" -c "TRUNCATE TABLE tickets, historique RESTART IDENTITY;"
+  283  ls
+  284  cd plateform-verification/
+  285  pm2 logs
+  286  pm2 restart all
+  287  cd /home/james/projet_jemil
+  288  git pull
+  289  ls
+  290  cd plateform-verification/
+  291  git pull
+  292  pm2 restart frontend/
+  293  pm2 restart all
+  294  df
+  295  mysql --version
+  296  sudo apt update
+  297  sudo apt install mysql-server -y
+  298  sudo mysql -e "CREATE DATABASE IF NOT EXISTS scolapp_registry;"
+  299  sudo mysql -e "CREATE DATABASE IF NOT EXISTS scolapp;"
+  300  mysql --version
+  301  mkdir -p Fosilamaster
+  302  cd Fosilamaster
+  303  git clone https://github.com/james21411/Projet_scolapp.git .
+  304  sudo npm install -g pm2
+  305  ls
+  306  npm install
+  307  ls
+  308  sudo mysql -u root -p
+  309  mysql -u james -pNuttertools2.0 scolapp < init_school_schema.sql
+  310  ls
+  311  mysql -u james -pNuttertools2.0 scolapp < src/db/init_school_schema.sql
+  312  cd src
+  313  ls
+  314  ls -la
+  315  cd schemas/
+  316  ls
+  317  ls -la
+  318  cd ..
+  319  git pull
+  320  mysql -u james -pNuttertools2.0 scolapp < src/db/init_school_schema.sql
+  321  mysql -u james -pNuttertools2.0 scolapp < src/db/init_registry.sql
+  322  mysl -u root -p
+  323  mysql -u root -p
+  324  mysql -u james -p
+  325  sudo mysql -u root -p
+  326  mysql -u james -pNuttertools2.0 scolapp < src/db/init_registry.sql
+  327  nano .env
+  328  npm run build
+  329  npm  run dev
+  330  npm  run dec:lan
+  331  git pull
+  332  npm run build
+  333  git pull
+  334  npm run build
+  335  clear
+  336  git pull
+  337  npm run build
+  338  git pull
+  339  npm run build
+  340  # 1. Lancer le serveur Next.js en arrière-plan
+  341  pm2 start npm --name "fosilamaster" -- start -- -p 3000
+  342  # 2. Sauvegarder la configuration PM2 pour un redémarrage automatique en cas de reboot du serveur
+  343  pm2 save
+  344  pm2 startup
+  345  # 1. Vérifier et recharger Nginx
+  346  sudo nginx -t
+  347  sudo systemctl reload nginx
+  348  # 2. Générer le certificat SSL gratuit avec Certbot
+  349  sudo certbot --nginx -d fosilamaster.verificationticket.com
+  350  sudo nano /etc/nginx/sites-available/fosilamaster.verificationticket.com
+  351  sudo ln -s /etc/nginx/sites-available/fosilamaster.verificationticket.com /etc/nginx/sites-enabled/
+  352  sudo nginx -t
+  353  sudo systemctl reload nginx
+  354  sudo certbot --nginx -d fosilamaster.verificationticket.com
+  355  sudo rm -f /etc/nginx/sites-enabled/default
+  356  sudo certbot --nginx -d fosilamaster.verificationticket.com
+  357  sudo systemctl reload nginx
+  358  pm2 logs
+  359  nano .env
+  360  # Supprimer l'ancienne instance qui plantait
+  361  pm2 delete fosilamaster
+  362  # Lancer FosilaMaster sur le port 3005
+  363  pm2 start npm --name "fosilamaster" -- start -- -p 3005
+  364  # Sauvegarder PM2
+  365  pm2 save
+  366  sudo nano /etc/nginx/sites-available/fosilamaster.verificationticket.com
+  367  sudo systemctl reload nginx
+  368  pm2 logs
+  369  cd ~/Fosilamaster
+  370  git pull
+  371  npm run build
+  372  pm2 restart fosilamaster
+  373  pm2  logs
+  374  sudo nano /etc/nginx/sites-available/fosilamaster.verificationticket.com
+  375  sudo nginx -t && sudo systemctl reload nginx
+  376  pm2  logs
+  377  ls
+  378  cd plateform-verification/
+  379  git status
+  380  git pull
+  381  pm2 restart all
+  382  psql "postgresql://james:kali@localhost:5432/plate_verification"
+  383  pm2 restart all
+  384  pm2 logd
+  385  pm2 logs
+  386  git pull
+  387  ls
+  388  cd Fosilamaster/
+  389  npm run build
+  390  cd Fosilamaster/
+  391  npm run build
+  392  ls
+  393  cd Fosilamaster/
+  394  git pull
+  395  pm2 restart all
+  396  pm2 logs 2-
+  397  pm2 logs 20
+  398  pm2 logs --20
+  399  pms logs
+  400  pm2 logs
+  401  cd Fosilamaster/
+  402  npm run build
+  403  pms restart all
+  404  pm2 restart all
+  405  cd Fosilamaster/
+  406  git pull origin main
+  407  npm run build
+  408  pm2 restart all
+  409  cd Fosilamaster/
+  410  logs
+  411  pm2 logs
+  412  cd Fosilamaster/
+  413  git pull
+  414  npm run build
+  415  pm2 restart all
+  416  cd Fosilamaster/
+  417  ls
+  418  pm2 logs
+  419  cd Fosilamaster/
+  420  git pull
+  421  npm run build
+  422  pm2 restart all
+  423  cd Fosilamaster/
+  424  exit
+  425  cd Fosilamaster/
+  426  mysqldump -uNexus -p --no-data --routines --triggers --skip-comments scolapp > schema_scolapp.sql
+  427  mysqldump -uNexus -p --no-data --routines --triggers --skip-comments scolapp > schema_scolappserveur.sql
+  428  mysqldump -ujames -p --no-data --routines --triggers --skip-comments scolapp > schema_scolapp.sql
+  429  ls
+  430  nano schema_scolappserveur.sql
+  431  nano schema_scolapp.sql
+  432  mysqldump -ujames -p --no-data --routines --triggers --skip-comments scolapp > schema_scoolapp.sql
+  433  ls
+  434  mysql -u james -p
+  435  mysql -ujames -p
+  436  curl -X POST https://TON-DOMAINE/api/finance/create-default-fee-structures
+  437  cd /home/james/Fosilamaster
+  438  cp src/app/api/finance/fee-structure/route.ts src/app/api/finance/fee-structure/route.ts.bak
+  439  nano src/app/api/finance/fee-structure/route.ts
+  440  cd /home/james/Fosilamaster
+  441  git pull
+  442  npm run build
+  443  cd /home/james/Fosilamaster
+  444  git pull
+  445  npm run build
+  446  pm2 restart fosilamaster --update-env
+  447  curl -i "http://localhost:3005/api/finance/fee-structure/?t=$(date +%s)"
+  448  curl -i -L "https://fosilamaster.verificationticket.com/api/finance/fee-structure/?t=$(date +%s)"
+  449  pm2 logs
+  450  pm2 logs
+  451  mysqldump -ujames -p --no-data --routines --triggers --skip-comments scolapp > schema_scoolapp.sql
+  452  ls
+  453  nano schema_scoolapp.sql 
+  454  curl -i https://fosilamaster.verificationticket.com/api/finance/fee-structure
+  455  curl -i -X POST https://fosilamaster.verificationticket.com/api/finance/create-default-fee-structures
+  456  curl -s https://fosilamaster.verificationticket.com/api/finance/fee-structure
+  457  mysql -ujames -p
+  458  curl -i -L -X POST https://fosilamaster.verificationticket.com/api/finance/create-default-fee-structures/
+  459  curl -i -L https://fosilamaster.verificationticket.com/api/finance/fee-structure/
+  460  mysql -ujames -p
+  461  pm2 list
+  462  pm2 restart all
+  463  curl -i -L https://fosilamaster.verificationticket.com/api/finance/fee-structure/
+  464  curl -i -L "https://fosilamaster.verificationticket.com/api/finance/fee-structure/?t=$(date +%s)"
+  465  curl -i "http://localhost:3000/api/finance/fee-structure/?t=$(date +%s)"
+  466  pm2 show fosilamaster
+  467  ss -ltnp
+  468  curl -i "http://localhost:3005/api/finance/fee-structure/?t=$(date +%s)"
+  469  curl -i "http://localhost:3005/api/finance/fee-structure?t=$(date +%s)"
+  470  cd /home/james/Fosilamaster
+  471  grep -R "force-dynamic" -n src/app/api/finance/fee-structure/route.*
+  472  grep -R "getFeeStructure" -n src/app/api/finance/fee-structure/route.*
+  473  cd /home/james/Fosilamaster
+  474  cat .env
+  475  cd /home/james/Fosilamaster
+  476  cp src/app/api/finance/fee-structure/route.ts src/app/api/finance/fee-structure/route.ts.bak
+  477  nano src/app/api/finance/fee-structure/route.ts
+  478  cd /home/james/Fosilamaster
+  479  git pull
+  480  npm run build
+  481  pm2 restart fosilamaster --update-env
+  482  curl -i "http://localhost:3005/api/finance/overview/?schoolYear=2025-2026&t=$(date +%s)"
+  483  curl -i "http://localhost:3005/api/finance/monthly-chart/?schoolYear=2025-2026&t=$(date +%s)"
+  484  pm2 logs
+  485  mysql -ujames -p
+  486  SHOW DATABASES;
+  487  mysql -ujames -p
+  488  curl -s "http://localhost:3005/api/students" | head -c 1000
+  489  curl -s "http://localhost:3005/api/finance/payment-report/?schoolYear=2025-2026&t=$(date +%s)" | head -c 1000
+  490  curl -s "http://localhost:3005/api/finance/payment-report/?schoolYear=2026-2027&t=$(date +%s)" | head -c 1000
+  491  clear
+  492  mysql -ujames -p
+  493  cd /home/james/Fosilamaster
+  494  git pull
+  495  npm run build
+  496  pm2 restart fosilamaster --update-env
+  497  pm2 logs
+  498  mysql -ujames -p
+  499  git pull
+  500  cd Fosilamaster/
+  501  git pull
+  502  git status
+  503  git pull
+  504  cd /home/james/Fosilamaster
+  505  mkdir -p ~/backup-fosilamaster
+  506  cp .env ~/backup-fosilamaster/.env.$(date +%F-%H%M%S)
+  507  cp schema_scolapp.sql ~/backup-fosilamaster/schema_scolapp.sql.$(date +%F-%H%M%S) 2>/dev/null || true
+  508  git stash push -m "backup env serveur avant pull" .env
+  509  mv schema_scolapp.sql ~/backup-fosilamaster/schema_scolapp.sql.local.$(date +%F-%H%M%S)
+  510  git pull
+  511  cp ~/backup-fosilamaster/.env.* .env
+  512  npm run build
+  513  cd Fosilamaster/
+  514  pm2 restart all
+  515  pm2 logs
+  516  mysql -ujames -p 
+  517  curl -s -H "Host: fosilamaster.verificationticket.com" "http://localhost:3005/api/finance/overview/?schoolYear=2026-2027&t=$(date +%s)"
+  518  curl -s -H "Host: fosilamaster.verificationticket.com" "http://localhost:3005/api/finance/payment-report/?schoolYear=2026-2027&t=$(date +%s)"
+  519  mysql -ujames -p
+  520  cd Fosilamaster/
+  521  npm run build
+  522  pm2 restart all
+  523  cd Fosilamaster/
+  524  git pull
+  525  npm run build
+  526  cd /home/james/Fosilamaster
+  527  git pull
+  528  npm run build
+  529  pm2 restart fosilamaster --update-env
+  530  cd Fosilamaster/
+  531  git pull
+  532  npm install
+  533  mysql -u root -p < src/db/migrations/add_registry_approval_columns.sql
+  534  mysql -u james -p < src/db/migrations/add_registry_approval_columns.sql
+  535  git pull origin main
+  536  mysql -u james -p < src/db/migrations/add_registry_approval_columns.sql
+  537  npm run build
+  538  pm2 restart all
+  539  git pull origin main
+  540  npm run build
+  541  pm2 restart all
+  542  cd Fosilamaster/
+  543  git pull origin main
+  544  npm run build
+  545  pm2 restart all
+  546  pm2 logs
+  547  git pull origin main
+  548  npm run build
+  549  pm2 restart all
+  550  cd Fosilamaster/
+  551  git pull origin main
+  552  npm run build
+  553  pm2 restart all
+  554  cd Fosilamaster/
+  555  git pull origin main
+  556  npm run build
+  557  pm2 restart all  # ou pm2 restart scolapp
+  558  cd Fosilamaster/
+  559  git pull origin main
+  560  pm2 restart all
+  561  npm run build
+  562  cd Fosilamaster/
+  563  git pull
+  564  npm run build
+  565  cd Fosilamaster/
+  566  git pull origin main
+  567  git pull
+  568  npm run build
+  569  pm2 restart all
+  570  exit
+  571  ls
+  572  cd plateform-verification/
+  573  sudo cat /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf 2>/dev/null
+  574  sudo cat /etc/apache2/sites-enabled/* 2>/dev/null
+  575  sudo nano /etc/nginx/sites-available/verificationticket.conf
+  576  sudo bash -c 'cat << "EOF" > /etc/nginx/sites-available/verificationticket.conf
+  577  server {
+  578      server_name fosilamaster.verificationticket.com;
+  579      client_max_body_size 20M;
+  580      location / {
+  581          proxy_pass http://localhost:3005;
+  582          proxy_http_version 1.1;
+  583          proxy_set_header Upgrade $http_upgrade;
+  584          proxy_set_header Connection 'upgrade';
+  585          proxy_set_header Host $host;
+  586          proxy_set_header Origin $scheme://$host;
+  587          proxy_set_header X-Real-IP $remote_addr;
+  588          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  589          proxy_set_header X-Forwarded-Proto $scheme;
+  590          proxy_cache_bypass $http_upgrade;
+  591      }
+  592      listen 443 ssl;
+  593      ssl_certificate /etc/letsencrypt/live/fosilamaster.verificationticket.com/fullchain.pem;
+  594      ssl_certificate_key /etc/letsencrypt/live/fosilamaster.verificationticket.com/privkey.pem;
+  595      include /etc/letsencrypt/options-ssl-nginx.conf;
+  596      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+  597  }
+  598  server {
+  599      listen 80;
+  600      server_name fosilamaster.verificationticket.com;
+  601      return 301 https://$host$request_uri;
+  602  }
+  603  # Redirection globale (HTTP + Accent Punycode + WWW) vers https://verificationticket.com
+  604  server {
+  605      listen 80;
+  606      server_name xn--vrificationticket-btb.com www.xn--vrificationticket-btb.com verificationticket.com www.verificationticket.com;
+  607      return 301 https://verificationticket.com$request_uri;
+  608  }
+  609  # Site principal Frontend & API (HTTPS)
+  610  server {
+  611      listen 443 ssl http2;
+  612      server_name verificationticket.com www.verificationticket.com;
+  613      # SSL Certbot (fullchain.pem requis pour la compatibilité mobile)
+  614      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  615      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  616      # Headers de sécurité
+  617      add_header X-Frame-Options "SAMEORIGIN";
+  618      add_header X-Content-Type-Options "nosniff";
+  619      add_header Referrer-Policy "strict-origin-when-cross-origin";
+  620      # Gzip compression
+  621      gzip on;
+  622      gzip_types text/css application/javascript application/json;
+  623      # Frontend (Node.js port 9000)
+  624      location / {
+  625          proxy_pass http://localhost:9000;
+  626          proxy_http_version 1.1;
+  627          proxy_set_header Host $host;
+  628          proxy_set_header X-Real-IP $remote_addr;
+  629          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  630          proxy_set_header X-Forwarded-Proto $scheme;
+  631      }
+  632      # API Gateway (Node.js port 3000)
+  633      location /api/ {
+  634          proxy_pass http://localhost:3000;
+  635          proxy_http_version 1.1;
+  636          proxy_set_header Host $host;
+  637          proxy_set_header X-Real-IP $remote_addr;
+  638          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  639          proxy_set_header X-Forwarded-Proto $scheme;
+  640      }
+  641      # Service Worker & PWA
+  642      location /sw.js {
+  643          proxy_pass http://localhost:9000/sw.js;
+  644          add_header Cache-Control "no-cache, no-store, must-revalidate";
+  645      }
+  646      location /manifest.json {
+  647          proxy_pass http://localhost:9000/manifest.json;
+  648          add_header Cache-Control "no-cache";
+  649      }
+  650  }
+  651  EOF' && sudo nginx -t && sudo systemctl reload nginx
+  652  clear
+  653  sudo cat << 'EOF' | sudo tee /etc/nginx/sites-available/verificationticket.conf > /dev/null
+  654  server {
+  655      server_name fosilamaster.verificationticket.com;
+  656      client_max_body_size 20M;
+  657      location / {
+  658          proxy_pass http://localhost:3005;
+  659          proxy_http_version 1.1;
+  660          proxy_set_header Upgrade $http_upgrade;
+  661          proxy_set_header Connection "upgrade";
+  662          proxy_set_header Host $host;
+  663          proxy_set_header Origin $scheme://$host;
+  664          proxy_set_header X-Real-IP $remote_addr;
+  665          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  666          proxy_set_header X-Forwarded-Proto $scheme;
+  667          proxy_cache_bypass $http_upgrade;
+  668      }
+  669      listen 443 ssl;
+  670      ssl_certificate /etc/letsencrypt/live/fosilamaster.verificationticket.com/fullchain.pem;
+  671      ssl_certificate_key /etc/letsencrypt/live/fosilamaster.verificationticket.com/privkey.pem;
+  672      include /etc/letsencrypt/options-ssl-nginx.conf;
+  673      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+  674  }
+  675  server {
+  676      listen 80;
+  677      server_name fosilamaster.verificationticket.com;
+  678      return 301 https://$host$request_uri;
+  679  }
+  680  # Redirection globale (HTTP + Accent Punycode + WWW) vers https://verificationticket.com
+  681  server {
+  682      listen 80;
+  683      server_name xn--vrificationticket-btb.com www.xn--vrificationticket-btb.com verificationticket.com www.verificationticket.com;
+  684      return 301 https://verificationticket.com$request_uri;
+  685  }
+  686  # Site principal Frontend & API (HTTPS)
+  687  server {
+  688      listen 443 ssl http2;
+  689      server_name verificationticket.com www.verificationticket.com;
+  690      # SSL Certbot (fullchain.pem requis pour la compatibilité mobile)
+  691      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  692      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  693      # Headers de sécurité
+  694      add_header X-Frame-Options "SAMEORIGIN";
+  695      add_header X-Content-Type-Options "nosniff";
+  696      add_header Referrer-Policy "strict-origin-when-cross-origin";
+  697      # Gzip compression
+  698      gzip on;
+  699      gzip_types text/css application/javascript application/json;
+  700      # Frontend (Node.js port 9000)
+  701      location / {
+  702          proxy_pass http://localhost:9000;
+  703          proxy_http_version 1.1;
+  704          proxy_set_header Host $host;
+  705          proxy_set_header X-Real-IP $remote_addr;
+  706          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  707          proxy_set_header X-Forwarded-Proto $scheme;
+  708      }
+  709      # API Gateway (Node.js port 3000)
+  710      location /api/ {
+  711          proxy_pass http://localhost:3000;
+  712          proxy_http_version 1.1;
+  713          proxy_set_header Host $host;
+  714          proxy_set_header X-Real-IP $remote_addr;
+  715          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  716          proxy_set_header X-Forwarded-Proto $scheme;
+  717      }
+  718      # Service Worker & PWA
+  719      location /sw.js {
+  720          proxy_pass http://localhost:9000/sw.js;
+  721          add_header Cache-Control "no-cache, no-store, must-revalidate";
+  722      }
+  723      location /manifest.json {
+  724          proxy_pass http://localhost:9000/manifest.json;
+  725          add_header Cache-Control "no-cache";
+  726      }
+  727  }
+  728  EOF
+  729  curl -sSL https://pastebin.com/raw/d8X6d2uW 2>/dev/null || echo "telechargement..."
+  730  sudo python3 -c '
+  731  config = """
+  732  server {
+  733      server_name fosilamaster.verificationticket.com;
+  734      client_max_body_size 20M;
+  735      location / {
+  736          proxy_pass http://localhost:3005;
+  737          proxy_http_version 1.1;
+  738          proxy_set_header Upgrade $http_upgrade;
+  739          proxy_set_header Connection "upgrade";
+  740          proxy_set_header Host $host;
+  741          proxy_set_header Origin $scheme://$host;
+  742          proxy_set_header X-Real-IP $remote_addr;
+  743          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  744          proxy_set_header X-Forwarded-Proto $scheme;
+  745          proxy_cache_bypass $http_upgrade;
+  746      }
+  747      listen 443 ssl;
+  748      ssl_certificate /etc/letsencrypt/live/fosilamaster.verificationticket.com/fullchain.pem;
+  749      ssl_certificate_key /etc/letsencrypt/live/fosilamaster.verificationticket.com/privkey.pem;
+  750      include /etc/letsencrypt/options-ssl-nginx.conf;
+  751      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+  752  }
+  753  server {
+  754      listen 80;
+  755      server_name fosilamaster.verificationticket.com;
+  756      return 301 https://$host$request_uri;
+  757  }
+  758  server {
+  759      listen 80;
+  760      server_name xn--vrificationticket-btb.com www.xn--vrificationticket-btb.com verificationticket.com www.verificationticket.com;
+  761      return 301 https://verificationticket.com$request_uri;
+  762  }
+  763  server {
+  764      listen 443 ssl http2;
+  765      server_name verificationticket.com www.verificationticket.com;
+  766      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  767      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  768      add_header X-Frame-Options "SAMEORIGIN";
+  769      add_header X-Content-Type-Options "nosniff";
+  770      add_header Referrer-Policy "strict-origin-when-cross-origin";
+  771      gzip on;
+  772      gzip_types text/css application/javascript application/json;
+  773      location / {
+  774          proxy_pass http://localhost:9000;
+  775          proxy_http_version 1.1;
+  776          proxy_set_header Host $host;
+  777          proxy_set_header X-Real-IP $remote_addr;
+  778          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  779          proxy_set_header X-Forwarded-Proto $scheme;
+  780      }
+  781      location /api/ {
+  782          proxy_pass http://localhost:3000;
+  783          proxy_http_version 1.1;
+  784          proxy_set_header Host $host;
+  785          proxy_set_header X-Real-IP $remote_addr;
+  786          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  787          proxy_set_header X-Forwarded-Proto $scheme;
+  788      }
+  789      location /sw.js {
+  790          proxy_pass http://localhost:9000/sw.js;
+  791          add_header Cache-Control "no-cache, no-store, must-revalidate";
+  792      }
+  793      location /manifest.json {
+  794          proxy_pass http://localhost:9000/manifest.json;
+  795          add_header Cache-Control "no-cache";
+  796      }
+  797  }
+  798  """
+  799  with open("/etc/nginx/sites-available/verificationticket.conf", "w") as f:
+  800      f.write(config)
+  801  print("Fichier écrit avec succès!")
+  802  ' && sudo nginx -t && sudo systemctl reload nginx
+  803  sudo cat /etc/nginx/sites-available/verificationticket.conf
+  804  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com -d xn--vrificationticket-btb.com --expand
+  805  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --expand
+  806  ls
+  807  cd plateform-verification/
+  808  sudo certbot certonly --nginx -d verificationticket.com -d www.verificationticket.com --preferred-chain "ISRG Root X1" --force-renewal && sudo python3 -c '
+  809  config = """
+  810  server {
+  811      server_name fosilamaster.verificationticket.com;
+  812      client_max_body_size 20M;
+  813      location / {
+  814          proxy_pass http://localhost:3005;
+  815          proxy_http_version 1.1;
+  816          proxy_set_header Upgrade $http_upgrade;
+  817          proxy_set_header Connection "upgrade";
+  818          proxy_set_header Host $host;
+  819          proxy_set_header Origin $scheme://$host;
+  820          proxy_set_header X-Real-IP $remote_addr;
+  821          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  822          proxy_set_header X-Forwarded-Proto $scheme;
+  823          proxy_cache_bypass $http_upgrade;
+  824      }
+  825      listen 443 ssl;
+  826      ssl_certificate /etc/letsencrypt/live/fosilamaster.verificationticket.com/fullchain.pem;
+  827      ssl_certificate_key /etc/letsencrypt/live/fosilamaster.verificationticket.com/privkey.pem;
+  828      include /etc/letsencrypt/options-ssl-nginx.conf;
+  829      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+  830  }
+  831  server {
+  832      listen 80;
+  833      server_name fosilamaster.verificationticket.com;
+  834      return 301 https://$host$request_uri;
+  835  }
+  836  server {
+  837      listen 80;
+  838      server_name xn--vrificationticket-btb.com www.xn--vrificationticket-btb.com verificationticket.com www.verificationticket.com;
+  839      return 301 https://verificationticket.com$request_uri;
+  840  }
+  841  server {
+  842      listen 443 ssl http2;
+  843      server_name verificationticket.com www.verificationticket.com;
+  844      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  845      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  846      # Configuration SSL Maximale Compatibilité Mobile
+  847      ssl_protocols TLSv1.2 TLSv1.3;
+  848      ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+  849      ssl_prefer_server_ciphers off;
+  850      ssl_session_timeout 1d;
+  851      ssl_session_cache shared:SSL:10m;
+  852      ssl_session_tickets off;
+  853      # Security Headers
+  854      add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+  855      add_header X-Frame-Options "SAMEORIGIN";
+  856      add_header X-Content-Type-Options "nosniff";
+  857      add_header Referrer-Policy "strict-origin-when-cross-origin";
+  858      gzip on;
+  859      gzip_types text/css application/javascript application/json;
+  860      location / {
+  861          proxy_pass http://localhost:9000;
+  862          proxy_http_version 1.1;
+  863          proxy_set_header Host $host;
+  864          proxy_set_header X-Real-IP $remote_addr;
+  865          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  866          proxy_set_header X-Forwarded-Proto $scheme;
+  867      }
+  868      location /api/ {
+  869          proxy_pass http://localhost:3000;
+  870          proxy_http_version 1.1;
+  871          proxy_set_header Host $host;
+  872          proxy_set_header X-Real-IP $remote_addr;
+  873          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  874          proxy_set_header X-Forwarded-Proto $scheme;
+  875      }
+  876      location /sw.js {
+  877          proxy_pass http://localhost:9000/sw.js;
+  878          add_header Cache-Control "no-cache, no-store, must-revalidate";
+  879      }
+  880      location /manifest.json {
+  881          proxy_pass http://localhost:9000/manifest.json;
+  882          add_header Cache-Control "no-cache";
+  883      }
+  884  }
+  885  """
+  886  with open("/etc/nginx/sites-available/verificationticket.conf", "w") as f:
+  887      f.write(config)
+  888  print("Configuration 100% robuste appliquée !")
+  889  ' && sudo nginx -t && sudo systemctl reload nginx
+  890  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --server https://acme.zerossl.com/v2/DV90 --register-unsafely-without-email --force-renewal
+  891  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --server https://api.buypass.com/acme/directory --register-unsafely-without-email --force-renewal
+  892  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --server https://dv.acme-v02.api.pki.goog/directory --register-unsafely-without-email --force-renewal
+  893  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --server https://acme.ssl.com/sslproxy --register-unsafely-without-email --force-renewal
+  894  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --m admin@verificationticket.com --agree-tos --server https://acme.ssl.com/sslproxy --force-renewal
+  895  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --email admin@verificationticket.com --agree-tos --server https://api.buypass.com/acme/directory --force-renewal
+  896  sudo certbot --nginx -d verificationticket.com -d www.verificationticket.com --email admin@verificationticket.com --agree-tos --server https://acme-v02.api.letsencrypt.org/directory --preferred-chain "ISRG Root X1" --force-renewal
+  897  curl -s https://get.acme.sh | sh
+  898  ~/.acme.sh/acme.sh --register-account -m admin@verificationticket.com --server zerossl
+  899  ~/.acme.sh/acme.sh --issue --nginx -d verificationticket.com -d www.verificationticket.com --server zerossl
+  900  ~/.acme.sh/acme.sh --install-cert -d verificationticket.com --key-file       /etc/letsencrypt/live/verificationticket.com/privkey.pem  --fullchain-file /etc/letsencrypt/live/verificationticket.com/fullchain.pem --reloadcmd     "sudo systemctl reload nginx"
+  901  sudo ~/.acme.sh/acme.sh --issue -d verificationticket.com -d www.verificationticket.com --webroot /home/james/plateform-verification/frontend/dist --server zerossl --force && sudo ~/.acme.sh/acme.sh --install-cert -d verificationticket.com --key-file /etc/letsencrypt/live/verificationticket.com/privkey.pem --fullchain-file /etc/letsencrypt/live/verificationticket.com/fullchain.pem --reloadcmd "systemctl reload nginx"
+  902  sudo systemctl stop nginx && sudo ~/.acme.sh/acme.sh --issue -d verificationticket.com -d www.verificationticket.com --standalone --server zerossl --force && sudo ~/.acme.sh/acme.sh --install-cert -d verificationticket.com --key-file /etc/letsencrypt/live/verificationticket.com/privkey.pem --fullchain-file /etc/letsencrypt/live/verificationticket.com/fullchain.pem --reloadcmd "systemctl start nginx"
+  903  clear
+  904  sudo ~/.acme.sh/acme.sh --register-account -m admin@verificationticket.com --server zerossl
+  905  sudo systemctl stop nginx && sudo ~/.acme.sh/acme.sh --issue -d verificationticket.com -d www.verificationticket.com --standalone --server zerossl --force && sudo ~/.acme.sh/acme.sh --install-cert -d verificationticket.com --key-file /etc/letsencrypt/live/verificationticket.com/privkey.pem --fullchain-file /etc/letsencrypt/live/verificationticket.com/fullchain.pem --reloadcmd "systemctl start nginx"
+  906  clear
+  907  /home/james/.acme.sh/acme.sh --register-account -m admin@verificationticket.com --server zerossl
+  908  sudo /home/james/.acme.sh/acme.sh --register-account -m admin@verificationticket.com --server zerossl --force
+  909  sudo systemctl stop nginx && sudo /home/james/.acme.sh/acme.sh --issue -d verificationticket.com -d www.verificationticket.com --standalone --server zerossl --force && sudo /home/james/.acme.sh/acme.sh --install-cert -d verificationticket.com --key-file /etc/letsencrypt/live/verificationticket.com/privkey.pem --fullchain-file /etc/letsencrypt/live/verificationticket.com/fullchain.pem --reloadcmd "systemctl start nginx"
+  910  sudo cp /root/.acme.sh/verificationticket.com_ecc/fullchain.cer /etc/letsencrypt/live/verificationticket.com/fullchain.pem && sudo cp /root/.acme.sh/verificationticket.com_ecc/verificationticket.com.key /etc/letsencrypt/live/verificationticket.com/privkey.pem && sudo systemctl restart nginx
+  911  sudo python3 -c '
+  912  config = """
+  913  include /etc/nginx/mime.types;
+  914  server {
+  915      server_name fosilamaster.verificationticket.com;
+  916      client_max_body_size 20M;
+  917      location / {
+  918          proxy_pass http://localhost:3005;
+  919          proxy_http_version 1.1;
+  920          proxy_set_header Upgrade $http_upgrade;
+  921          proxy_set_header Connection "upgrade";
+  922          proxy_set_header Host $host;
+  923          proxy_set_header Origin $scheme://$host;
+  924          proxy_set_header X-Real-IP $remote_addr;
+  925          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  926          proxy_set_header X-Forwarded-Proto $scheme;
+  927          proxy_cache_bypass $http_upgrade;
+  928      }
+  929      listen 443 ssl;
+  930      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  931      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  932  }
+  933  server {
+  934      listen 80;
+  935      server_name fosilamaster.verificationticket.com;
+  936      return 301 https://$host$request_uri;
+  937  }
+  938  server {
+  939      listen 80;
+  940      server_name xn--vrificationticket-btb.com www.xn--vrificationticket-btb.com verificationticket.com www.verificationticket.com;
+  941      return 301 https://verificationticket.com$request_uri;
+  942  }
+  943  server {
+  944      listen 443 ssl http2;
+  945      server_name verificationticket.com www.verificationticket.com;
+  946      ssl_certificate /etc/letsencrypt/live/verificationticket.com/fullchain.pem;
+  947      ssl_certificate_key /etc/letsencrypt/live/verificationticket.com/privkey.pem;
+  948      # En-têtes de sécurité assouplis pour la compatibilité CSS/JS
+  949      add_header X-Frame-Options "SAMEORIGIN";
+  950      add_header Referrer-Policy "strict-origin-when-cross-origin";
+  951      # Gzip compression
+  952      gzip on;
+  953      gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+  954      # Dynamic Assets (CSS / JS / Images)
+  955      location ~* \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$ {
+  956          proxy_pass http://localhost:9000;
+  957          proxy_http_version 1.1;
+  958          proxy_set_header Host $host;
+  959          proxy_set_header X-Real-IP $remote_addr;
+  960          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  961          proxy_set_header X-Forwarded-Proto https;
+  962          add_header Cache-Control "public, max-age=31536000, immutable";
+  963      }
+  964      # Frontend (Node.js port 9000)
+  965      location / {
+  966          proxy_pass http://localhost:9000;
+  967          proxy_http_version 1.1;
+  968          proxy_set_header Host $host;
+  969          proxy_set_header X-Real-IP $remote_addr;
+  970          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  971          proxy_set_header X-Forwarded-Proto https;
+  972      }
+  973      # API Gateway (Node.js port 3000)
+  974      location /api/ {
+  975          proxy_pass http://localhost:3000;
+  976          proxy_http_version 1.1;
+  977          proxy_set_header Host $host;
+  978          proxy_set_header X-Real-IP $remote_addr;
+  979          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  980          proxy_set_header X-Forwarded-Proto https;
+  981      }
+  982  }
+  983  """
+  984  with open("/etc/nginx/sites-available/verificationticket.conf", "w") as f:
+  985      f.write(config)
+  986  ' && sudo nginx -t && sudo systemctl reload nginx
+  987  cd Fosilamaster/
+  988  ls
+  989  pm2 logs
+  990  cd plateform-verification/
+  991  history 
+  992  cd ..
+  993  ls
+  994  history >historique.txt

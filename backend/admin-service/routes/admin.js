@@ -49,6 +49,8 @@ function requireAuth(req, res, next) {
 /* ────────────────────────────────────────────────────────────────
    Helper : appel HTTP vers ticket-service
 ──────────────────────────────────────────────────────────────── */
+const TWENTY_MINUTES = 20 * 60 * 1000;
+
 async function callTicketService(path, method = 'GET', body = null) {
     const url = `${TICKET_SERVICE}/api/tickets${path}`;
     const options = { method, headers: { 'Content-Type': 'application/json' } };
@@ -57,6 +59,15 @@ async function callTicketService(path, method = 'GET', body = null) {
     const data = await res.json();
     if (!res.ok) throw { status: res.status, ...data };
     return data;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Helper : filtrer les tickets de moins de 20 minutes
+──────────────────────────────────────────────────────────────── */
+function filterRecentTickets(tickets) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - TWENTY_MINUTES);
+    return tickets.filter(ticket => new Date(ticket.created_at) < cutoff);
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -143,7 +154,8 @@ router.get('/tickets/stats', requireAuth, async (req, res) => {
 router.get('/tickets', requireAuth, async (_req, res) => {
     try {
         const data = await callTicketService('/pending');
-        res.json(data);
+        const filtered = filterRecentTickets(data.tickets);
+        res.json({ count: filtered.length, tickets: filtered });
     } catch (err) {
         console.error('[admin-service] Erreur ticket-service:', err);
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
@@ -154,7 +166,7 @@ router.get('/tickets', requireAuth, async (_req, res) => {
 router.get('/tickets/valides', requireAuth, async (_req, res) => {
     try {
         const { tickets } = await callTicketService('/');
-        const valides = (tickets || []).filter(t => t.statut === 'valide');
+        const valides = (tickets || []).filter(t => t.statut === 'valide' && new Date(t.created_at) < new Date(Date.now() - TWENTY_MINUTES));
         res.json({ count: valides.length, tickets: valides });
     } catch (err) {
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
@@ -165,7 +177,7 @@ router.get('/tickets/valides', requireAuth, async (_req, res) => {
 router.get('/tickets/invalides', requireAuth, async (_req, res) => {
     try {
         const { tickets } = await callTicketService('/');
-        const invalides = (tickets || []).filter(t => t.statut === 'invalide');
+        const invalides = (tickets || []).filter(t => t.statut === 'invalide' && new Date(t.created_at) < new Date(Date.now() - TWENTY_MINUTES));
         res.json({ count: invalides.length, tickets: invalides });
     } catch (err) {
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });

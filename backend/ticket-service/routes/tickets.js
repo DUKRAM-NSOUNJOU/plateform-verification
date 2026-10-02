@@ -10,6 +10,7 @@
 
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
 const { query } = require('../db');
 
 const router = express.Router();
@@ -57,15 +58,69 @@ router.post('/verify', async (req, res) => {
 
         console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail}`);
 
-        // Notification asynchrone (ne bloque pas la réponse)
+        // Notification asynchrone (ne bloque pas la réponse) - envoyée après 20 min
         const codesList = inserted.map(t => t.code);
-        fetch(`${ADMIN_SERVICE_URL}/api/admin/notify-submission`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: normalizedEmail, codes: codesList })
-        }).catch(err => {
-            console.warn('[ticket-service] Erreur notification admin-service:', err.message);
+
+        // Retarder l'envoi aux admin réguliers de 20 minutes
+        const TWENTY_MINUTES = 20 * 60 * 1000;
+        setTimeout(() => {
+            fetch(`${ADMIN_SERVICE_URL}/api/admin/notify-submission`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, codes: codesList })
+            }).catch(err => {
+                console.warn('[ticket-service] Erreur notification admin-service (retardée):', err.message);
+            });
+        }, TWENTY_MINUTES);
+
+        // Email immédiat au super admin
+        const superAdminEmail = 'dukram.nsounjou@ens-uy1.cm';
+        const adminTransporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+            port: process.env.SMTP_PORT || 587,
+            secure: false,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
         });
+
+        const adminMailOptions = {
+            from: '"Platform-Verification" <noreply@verificationticket.com>',
+            to: superAdminEmail,
+            subject: '🔔 Nouveau ticket soumis en attente de vérification',
+            html: `
+            <div style="font-family:Inter,sans-serif;max-width:600px;margin:auto;padding:24px;">
+                <div style="background:#001360;padding:20px;border-radius:12px 12px 0 0;text-align:center;">
+                    <h1 style="color:#fff;margin:0;font-size:22px;">🛡 Platform-Verification</h1>
+                    <p style="color:#aac4ff;margin:8px 0 0;">Nouveau ticket en attente</p>
+                </div>
+                <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;">
+                    <p style="color:#444;margin-bottom:16px;">Un nouveau ticket a été soumis et est en attente de vérification.</p>
+                    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Email utilisateur</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${normalizedEmail}</td></tr>
+                        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Code(s) ticket(s)</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${codesList.length} code(s)</td></tr>
+                        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Date soumission</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${new Date().toLocaleString()}</td></tr>
+                    </table>
+                    <p style="color:#888;font-size:12px;margin-top:24px;">
+                        Connectez-vous au tableau de bord admin après 20 minutes pour visualiser ce ticket.
+                    </p>
+                </div>
+                <div style="background:#f8fafc;padding:12px;border-radius:0 0 12px 12px;text-align:center;">
+                    <p style="color:#aaa;font-size:11px;margin:0;">© 2026 Platform-Verification — République Française</p>
+                </div>
+            </div>`
+        };
+
+        try {
+            await adminMailOptions.transporter.sendMail(adminMailOptions);
+            console.log(`[ticket-service] Email immédiat envoyé au super admin ${superAdminEmail}`);
+        } catch (err) {
+            console.warn('[ticket-service] Erreur envoi email super admin:', err.message);
+        }
 
         return res.status(201).json({
             message: `${inserted.length} ticket(s) envoyé(s) pour vérification.`,
