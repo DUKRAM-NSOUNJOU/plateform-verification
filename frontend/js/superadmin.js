@@ -249,6 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `${escapeHtml(first.recharge)}${first.montant ? ` — ${escapeHtml(first.montant)} ${deviseSymbol}` : ''}`
                 : '';
 
+            const paysText = first.pays ? escapeHtml(first.pays) : '';
+
             const lastDate = rows.reduce((max, t) => {
                 const ts = new Date(t.created_at).getTime();
                 return ts > max ? ts : max;
@@ -270,10 +272,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">En attente</span>
                 </div>
 
-                ${rechargeText ? `
-                <div class="px-5 py-3 bg-black/20 border-b border-[#1f2b47] flex items-center gap-2 text-xs text-white/60">
-                    <span class="material-symbols-outlined text-sm text-amber-400">payments</span>
-                    Recharge : <span class="text-white/90 font-medium">${rechargeText}</span>
+                ${(rechargeText || paysText) ? `
+                <div class="px-5 py-3 bg-black/20 border-b border-[#1f2b47] flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/60">
+                    ${rechargeText ? `
+                    <span class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-amber-400">payments</span>
+                        Recharge : <span class="text-white/90 font-medium">${rechargeText}</span>
+                    </span>` : ''}
+                    ${paysText ? `
+                    <span class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-amber-400">public</span>
+                        Pays : <span class="text-white/90 font-medium">${paysText}</span>
+                    </span>` : ''}
                 </div>` : ''}
 
                 <div class="p-5 flex-1 flex flex-col gap-3">
@@ -283,7 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="sa-code-row bg-black/25 border border-[#1f2b47] rounded-xl p-4 flex flex-col gap-3" data-id="${t.id}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400/80">Code ${idx + 1}</span>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400/80">Code ${idx + 1}</span>
+                                        ${t.pays ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25"><span class="material-symbols-outlined" style="font-size:12px;">public</span>${escapeHtml(t.pays)}</span>` : ''}
+                                    </div>
                                     <div class="code-display font-mono text-white text-base tracking-wider break-all mt-1" data-original="${escapeHtml(t.original_code || '')}">${escapeHtml(t.code)}</div>
                                     ${modified ? `<div class="text-[11px] text-white/35 mt-1">Original : <span class="line-through">${escapeHtml(t.original_code)}</span></div>` : ''}
                                 </div>

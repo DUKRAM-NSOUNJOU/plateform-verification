@@ -20,7 +20,7 @@ const router = express.Router();
 
 /* ── POST /verify ──────────────────────────────────────────────── */
 router.post('/verify', async (req, res) => {
-    const { email, recharge, montant, devise, tickets: codes } = req.body;
+    const { email, recharge, montant, devise, pays, tickets: codes } = req.body;
 
     if (!email || !Array.isArray(codes) || codes.length === 0) {
         return res.status(400).json({
@@ -34,6 +34,7 @@ router.post('/verify', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const normalizedPays  = (typeof pays === 'string' && pays.trim()) ? pays.trim() : null;
     const normalizedCodes = codes
         .map(c => c.trim())
         .filter(c => c.length > 0);
@@ -49,11 +50,11 @@ router.post('/verify', async (req, res) => {
         for (const code of normalizedCodes) {
             const id = uuidv4();
             await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, code, statut, released)
-                 VALUES ($1, $2, $3, $4, $5, $6, 'en_attente', FALSE)`,
-                [id, normalizedEmail, recharge, montant, devise, code]
+                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, statut, released)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', FALSE)`,
+                [id, normalizedEmail, recharge, montant, devise, normalizedPays, code]
             );
-            inserted.push({ id, code, recharge, montant, devise, statut: 'en_attente', released: false });
+            inserted.push({ id, code, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: false });
         }
         await query('COMMIT');
 
@@ -91,6 +92,8 @@ router.post('/verify', async (req, res) => {
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${recharge}</td></tr>` : ''}
                         ${montant ? `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Montant</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${montant} ${devise || ''}</td></tr>` : ''}
+                        <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Pays</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${normalizedPays || 'Non renseigné'}</td></tr>
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Code(s) ticket(s)</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${codesList.join(', ')}</td></tr>
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Date soumission</td>

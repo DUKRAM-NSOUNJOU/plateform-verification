@@ -14,7 +14,6 @@
 require('dotenv').config();
 const express      = require('express');
 const cors         = require('cors');
-const rateLimit    = require('express-rate-limit');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app  = express();
@@ -48,15 +47,9 @@ app.use(cors({
     credentials: true
 }));
 
-/* ── Rate limiting global ──────────────────────────────── */
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,  // 15 minutes
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Trop de requêtes, veuillez réessayer dans 15 minutes.' }
-});
-app.use(limiter);
+/* ── Rate limiting ───────────────────────────────────── */
+// Désactivé volontairement : la connexion, l'envoi de codes et le
+// tableau de bord doivent rester utilisables en permanence.
 
 /* ── Health check local ────────────────────────────────── */
 app.get('/api/health', (_req, res) => {

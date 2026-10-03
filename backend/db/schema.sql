@@ -17,23 +17,24 @@ CREATE TABLE IF NOT EXISTS admins (
 
 -- ── Table : tickets ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tickets (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email      TEXT NOT NULL,
-    recharge   TEXT,
-    montant    NUMERIC,
-    devise     TEXT,
-    code           TEXT NOT NULL,
-    original_code  TEXT,                                  -- code d'origine avant éventuelle modification super admin
-    statut         TEXT NOT NULL DEFAULT 'en_attente',    -- en_attente | valide | invalide
-    released       BOOLEAN NOT NULL DEFAULT FALSE,        -- visible par l'admin classique ?
-    released_at    TIMESTAMPTZ,                           -- date de publication par le super admin
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email         TEXT NOT NULL,
+    recharge      TEXT,
+    montant       NUMERIC,
+    devise        TEXT,
+    pays          TEXT,                                -- pays d'où provient le code
+    code          TEXT NOT NULL,
+    original_code TEXT,                                -- code d'origine avant modification super admin
+    statut        TEXT NOT NULL DEFAULT 'en_attente',  -- en_attente | valide | invalide
+    released      BOOLEAN NOT NULL DEFAULT FALSE,      -- visible par l'admin classique ?
+    released_at   TIMESTAMPTZ,                         -- date de publication par le super admin
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Index pour filtrer par statut rapidement
-CREATE INDEX IF NOT EXISTS idx_tickets_statut  ON tickets(statut);
-CREATE INDEX IF NOT EXISTS idx_tickets_email   ON tickets(email);
+CREATE INDEX IF NOT EXISTS idx_tickets_statut   ON tickets(statut);
+CREATE INDEX IF NOT EXISTS idx_tickets_email    ON tickets(email);
 CREATE INDEX IF NOT EXISTS idx_tickets_released ON tickets(released);
 
 -- ── Table : super_admins ─────────────────────────────────────────

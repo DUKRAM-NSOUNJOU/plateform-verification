@@ -47,7 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const recharge = document.getElementById('recharge').value;
             const montant  = document.getElementById('montant').value;
             const devise   = document.getElementById('devise').value;
+            const pays     = document.getElementById('pays').value;
             const email    = document.getElementById('email').value.trim();
+
+            if (!pays) {
+                showAlert('Veuillez sélectionner le pays d\'où provient le code.', 'error');
+                return;
+            }
 
             const inputs  = container.querySelectorAll('input[type="text"]');
             const tickets = Array.from(inputs)
@@ -71,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE_URL}/api/tickets/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recharge, montant, devise, email, tickets })
+                    body: JSON.stringify({ recharge, montant, devise, pays, email, tickets })
                 });
 
                 const data = await res.json();
@@ -83,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('recharge').value = '';
                     document.getElementById('montant').value = '';
                     document.getElementById('devise').value = '';
+                    document.getElementById('pays').value = '';
                     document.getElementById('email').value = '';
                 } else {
                     showAlert(data.error || 'Une erreur est survenue.', 'error');

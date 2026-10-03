@@ -29,6 +29,7 @@ const TICKET_COLUMNS = [
     ['recharge',      'TEXT'],
     ['montant',       'NUMERIC'],
     ['devise',        'TEXT'],
+    ['pays',          'TEXT'],
     ['released',      'BOOLEAN NOT NULL DEFAULT FALSE'],
     ['released_at',   'TIMESTAMPTZ'],
     ['original_code', 'TEXT']
