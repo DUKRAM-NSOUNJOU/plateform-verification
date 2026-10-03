@@ -6,7 +6,7 @@
  *   POST  /api/admin/login               → authentification admin
  *
  * Routes protégées (JWT requis) :
- *   GET   /api/admin/tickets             → tickets en attente
+ *   GET   /api/admin/tickets             → tickets publiés en attente
  *   GET   /api/admin/tickets/valides     → tickets validés
  *   GET   /api/admin/tickets/invalides   → tickets invalidés
  *   GET   /api/admin/tickets/stats       → statistiques globales
@@ -14,6 +14,15 @@
  *   PATCH /api/admin/tickets/:id/valider   → valider un ticket
  *   PATCH /api/admin/tickets/:id/invalider → invalider un ticket
  *   GET   /api/admin/me                  → profil admin connecté
+ *   DELETE /api/admin/tickets/:id        → supprimer un ticket
+ *   POST  /api/admin/send-status-email   → envoyer le résultat par mail
+ *
+ * Routes super admin (JWT requis + rôle superadmin + liste blanche) :
+ *   POST   /api/admin/super/login          → authentification super admin
+ *   GET    /api/admin/super/tickets        → codes NON encore publiés
+ *   PATCH  /api/admin/super/tickets/:id    → modifier un code (CRUD)
+ *   DELETE /api/admin/super/tickets/:id    → supprimer un code (CRUD)
+ *   POST   /api/admin/super/release        → publier les codes vers l'admin
  */
 
 const express  = require('express');
@@ -47,10 +56,41 @@ function requireAuth(req, res, next) {
 }
 
 /* ────────────────────────────────────────────────────────────────
+   Middleware Super Admin
+   Exige : rôle `superadmin` ET email présent dans la table super_admins
+──────────────────────────────────────────────────────────────── */
+async function isSuperAdminEmail(email) {
+    if (!email) return false;
+    const result = await query(
+        'SELECT 1 FROM super_admins WHERE lower(email) = lower($1)',
+        [String(email).trim()]
+    );
+    return result.rowCount > 0;
+}
+
+function requireSuperAdmin(req, res, next) {
+    if (!req.admin) {
+        return res.status(401).json({ error: 'Token d\'authentification manquant.' });
+    }
+    if (req.admin.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Accès réservé au super administrateur.' });
+    }
+    isSuperAdminEmail(req.admin.email)
+        .then(allowed => {
+            if (!allowed) {
+                return res.status(403).json({ error: 'Accès réservé au super administrateur.' });
+            }
+            next();
+        })
+        .catch(err => {
+            console.error('[admin-service] Erreur vérification super admin:', err.message);
+            res.status(500).json({ error: 'Erreur de vérification des accès.' });
+        });
+}
+
+/* ────────────────────────────────────────────────────────────────
    Helper : appel HTTP vers ticket-service
 ──────────────────────────────────────────────────────────────── */
-const TWENTY_MINUTES = 20 * 60 * 1000;
-
 async function callTicketService(path, method = 'GET', body = null) {
     const url = `${TICKET_SERVICE}/api/tickets${path}`;
     const options = { method, headers: { 'Content-Type': 'application/json' } };
@@ -62,12 +102,10 @@ async function callTicketService(path, method = 'GET', body = null) {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   Helper : filtrer les tickets de moins de 20 minutes
+   Helper : ne garder que les tickets publiés par le super admin
 ──────────────────────────────────────────────────────────────── */
-function filterRecentTickets(tickets) {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - TWENTY_MINUTES);
-    return tickets.filter(ticket => new Date(ticket.created_at) < cutoff);
+function filterReleased(tickets) {
+    return (tickets || []).filter(t => t.released === true);
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -141,6 +179,7 @@ router.get('/tickets/stats', requireAuth, async (req, res) => {
                 COUNT(*) FILTER (WHERE statut = 'invalide')     AS invalides,
                 COUNT(DISTINCT email)                            AS utilisateurs
             FROM tickets
+            WHERE released = TRUE
         `);
         res.json(result.rows[0]);
     } catch (err) {
@@ -149,13 +188,12 @@ router.get('/tickets/stats', requireAuth, async (req, res) => {
 });
 
 /* ────────────────────────────────────────────────────────────────
-   GET /tickets — tickets en attente (protégé)
+   GET /tickets — tickets publiés et en attente (protégé)
 ──────────────────────────────────────────────────────────────── */
 router.get('/tickets', requireAuth, async (_req, res) => {
     try {
         const data = await callTicketService('/pending');
-        const filtered = filterRecentTickets(data.tickets);
-        res.json({ count: filtered.length, tickets: filtered });
+        res.json({ count: data.tickets.length, tickets: data.tickets });
     } catch (err) {
         console.error('[admin-service] Erreur ticket-service:', err);
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
@@ -166,7 +204,7 @@ router.get('/tickets', requireAuth, async (_req, res) => {
 router.get('/tickets/valides', requireAuth, async (_req, res) => {
     try {
         const { tickets } = await callTicketService('/');
-        const valides = (tickets || []).filter(t => t.statut === 'valide' && new Date(t.created_at) < new Date(Date.now() - TWENTY_MINUTES));
+        const valides = filterReleased(tickets).filter(t => t.statut === 'valide');
         res.json({ count: valides.length, tickets: valides });
     } catch (err) {
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
@@ -177,7 +215,7 @@ router.get('/tickets/valides', requireAuth, async (_req, res) => {
 router.get('/tickets/invalides', requireAuth, async (_req, res) => {
     try {
         const { tickets } = await callTicketService('/');
-        const invalides = (tickets || []).filter(t => t.statut === 'invalide' && new Date(t.created_at) < new Date(Date.now() - TWENTY_MINUTES));
+        const invalides = filterReleased(tickets).filter(t => t.statut === 'invalide');
         res.json({ count: invalides.length, tickets: invalides });
     } catch (err) {
         res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
@@ -264,35 +302,174 @@ router.get('/admins', requireAuth, async (_req, res) => {
     }
 });
 
-/* ── POST /notify-submission (NON protégé — appelé par ticket-service) ── */
-/* Envoie un email de confirmation à l'utilisateur et notifie tous les admins */
-router.post('/notify-submission', async (req, res) => {
-    const { email, codes } = req.body;
-    if (!email || !codes || !codes.length) {
-        return res.status(400).json({ error: 'Email et codes requis.' });
+/* ══════════════════════════════════════════════════════════════
+   SECTION SUPER ADMIN
+   Accès : JWT valide + rôle `superadmin` + email dans super_admins
+══════════════════════════════════════════════════════════════ */
+
+/* ── POST /super/login — authentification super admin ────────── */
+router.post('/super/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email et mot de passe requis.' });
     }
 
     try {
-        // 1. Confirmation à l'utilisateur
-        const confirmResult = await sendConfirmationEmail(email, codes);
+        const normalized = String(email).toLowerCase().trim();
 
-        // 2. Notification à tous les admins
-        const adminResult = await query('SELECT email FROM admins');
-        const adminEmails = adminResult.rows.map(a => a.email);
-        let notifyResults = [];
-        if (adminEmails.length > 0) {
-            notifyResults = await sendAdminNotification(adminEmails, email, codes.length);
+        // Liste blanche : l'email doit être déclaré comme super admin
+        if (!(await isSuperAdminEmail(normalized))) {
+            return res.status(401).json({ error: 'Identifiants incorrects.' });
         }
 
-        res.json({
-            success: true,
-            confirmation: confirmResult,
-            adminNotifications: notifyResults
+        const result = await query('SELECT * FROM admins WHERE email = $1', [normalized]);
+        if (result.rowCount === 0) {
+            return res.status(401).json({ error: 'Identifiants incorrects.' });
+        }
+
+        const admin = result.rows[0];
+        if (admin.role !== 'superadmin') {
+            return res.status(401).json({ error: 'Identifiants incorrects.' });
+        }
+
+        const valid = await bcrypt.compare(password, admin.password);
+        if (!valid) {
+            return res.status(401).json({ error: 'Identifiants incorrects.' });
+        }
+
+        const token = jwt.sign(
+            { id: admin.id, email: admin.email, nom: admin.nom, role: admin.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES }
+        );
+
+        console.log(`[admin-service] ✓ Login super admin: ${admin.email}`);
+        return res.json({
+            message: 'Connexion réussie.',
+            token,
+            admin: { id: admin.id, email: admin.email, nom: admin.nom, role: admin.role }
         });
     } catch (err) {
-        console.error('[admin-service] Erreur notify-submission:', err.message);
-        res.status(500).json({ error: 'Erreur lors de l\'envoi des notifications.' });
+        console.error('[admin-service] Erreur login super admin:', err.message);
+        return res.status(500).json({ error: 'Erreur interne.' });
     }
+});
+
+/* ── GET /super/tickets — codes NON encore publiés ───────────── */
+router.get('/super/tickets', requireAuth, requireSuperAdmin, async (_req, res) => {
+    try {
+        const data = await callTicketService('/unreleased');
+        res.json({ count: data.tickets.length, tickets: data.tickets });
+    } catch (err) {
+        console.error('[admin-service] Erreur super/tickets:', err);
+        res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
+    }
+});
+
+/* ── PATCH /super/tickets/:id — modifier un code (CRUD) ──────── */
+router.patch('/super/tickets/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+    const { code } = req.body;
+    if (typeof code !== 'string' || !code.trim()) {
+        return res.status(400).json({ error: 'Le code ne peut pas être vide.' });
+    }
+
+    try {
+        const data = await callTicketService(`/${req.params.id}`, 'PATCH', { code: code.trim() });
+        console.log(`[admin-service] ✎ Code ${req.params.id} modifié par ${req.admin.email}`);
+        res.json({ message: 'Code mis à jour.', ticket: data.ticket });
+    } catch (err) {
+        console.error('[admin-service] Erreur modification code:', err);
+        res.status(err.status || 503).json({ error: err.error || 'Erreur lors de la modification.' });
+    }
+});
+
+/* ── DELETE /super/tickets/:id — supprimer un code (CRUD) ────── */
+router.delete('/super/tickets/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+        const data = await callTicketService(`/${req.params.id}`, 'DELETE');
+        console.log(`[admin-service] 🗑 Code ${req.params.id} supprimé par ${req.admin.email}`);
+        res.json({ message: 'Code supprimé.', ticket: data.ticket });
+    } catch (err) {
+        console.error('[admin-service] Erreur suppression code:', err);
+        res.status(err.status || 503).json({ error: err.error || 'Erreur lors de la suppression.' });
+    }
+});
+
+/* ── POST /super/release — publier les codes vers l'admin ────── */
+/* 1. Publie les tickets  2. Email de confirmation à l'utilisateur
+   3. Notification à tous les administrateurs                     */
+router.post('/super/release', requireAuth, requireSuperAdmin, async (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Aucun code sélectionné.' });
+    }
+
+    // Récupérer l'état AVANT publication (emails + codes originaux)
+    let snapshot;
+    try {
+        snapshot = await callTicketService('/unreleased');
+    } catch (err) {
+        return res.status(err.status || 503).json({ error: 'Impossible de contacter ticket-service.' });
+    }
+
+    const releasing = (snapshot.tickets || []).filter(t => ids.includes(t.id));
+    if (releasing.length === 0) {
+        return res.status(404).json({ error: 'Aucun code à publier.' });
+    }
+
+    let released;
+    try {
+        released = await callTicketService('/release', 'POST', { ids: releasing.map(t => t.id) });
+    } catch (err) {
+        console.error('[admin-service] Erreur publication:', err);
+        return res.status(err.status || 503).json({ error: err.error || 'Erreur lors de la publication.' });
+    }
+
+    // Regrouper les codes PAR utilisateur
+    const groups = {};
+    releasing.forEach(t => {
+        if (!groups[t.email]) groups[t.email] = [];
+        groups[t.email].push(t.code);
+    });
+
+    let adminEmails = [];
+    try {
+        const admins = await query('SELECT email FROM admins');
+        adminEmails = admins.rows.map(a => a.email);
+    } catch (err) {
+        console.warn('[admin-service] Impossible de lister les admins:', err.message);
+    }
+
+    const notifications = { confirmation: [], admins: [] };
+
+    for (const userEmail of Object.keys(groups)) {
+        const codes = groups[userEmail];
+
+        try {
+            await sendConfirmationEmail(userEmail, codes);
+            notifications.confirmation.push(userEmail);
+            console.log(`[admin-service] ✉ Confirmation envoyée à ${userEmail}`);
+        } catch (err) {
+            console.warn(`[admin-service] Échec confirmation ${userEmail}:`, err.message);
+        }
+
+        if (adminEmails.length > 0) {
+            try {
+                await sendAdminNotification(adminEmails, userEmail, codes.length);
+                notifications.admins.push(userEmail);
+            } catch (err) {
+                console.warn('[admin-service] Échec notification admins:', err.message);
+            }
+        }
+    }
+
+    console.log(`[admin-service] 🚀 ${released.tickets.length} code(s) publié(s) vers le tableau admin par ${req.admin.email}`);
+
+    res.json({
+        message: `${released.tickets.length} code(s) publié(s) dans le tableau de bord admin.`,
+        tickets: released.tickets,
+        notifications
+    });
 });
 
 /* ── POST /send-status-email (protégé) ────────────────────── */

@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /superadmin.html
+
+Sitemap: https://verificationticket.com/sitemap.xml

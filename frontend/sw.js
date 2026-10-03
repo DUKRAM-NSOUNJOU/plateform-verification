@@ -111,15 +111,26 @@ async function cacheFirst(request) {
 }
 
 async function networkFirst(request) {
+    const pathname = new URL(request.url).pathname;
+    // Jamais de mise en cache pour la console super admin (données sensibles)
+    const isPrivate = pathname.startsWith('/api/admin/super/');
+
     try {
         const networkResponse = await fetch(request);
         // Mettre en cache les réponses API réussies
-        if (networkResponse.ok && request.method === 'GET') {
+        if (!isPrivate && networkResponse.ok && request.method === 'GET') {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
     } catch {
+        if (isPrivate) {
+            return new Response(
+                JSON.stringify({ error: 'Connexion au serveur impossible.' }),
+                { status: 503, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
         // Chercher en cache
         const cached = await caches.match(request);
         if (cached) return cached;

@@ -6,7 +6,8 @@
   "scripts": {
     "postinstall": "npm install --prefix api-gateway && npm install --prefix ticket-service && npm install --prefix admin-service",
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "db:migrate": "node db/migrate.js"
   },
   "private": true
 }

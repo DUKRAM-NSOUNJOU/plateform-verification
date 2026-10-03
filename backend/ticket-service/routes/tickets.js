@@ -1,11 +1,14 @@
 /**
  * ticket-service/routes/tickets.js — VERSION PostgreSQL
  * ────────────────────────────────────────────────────────
- * POST   /api/tickets/verify   → soumettre des tickets
- * GET    /api/tickets          → liste tous les tickets
- * GET    /api/tickets/pending  → tickets en attente
- * GET    /api/tickets/:id      → détail d'un ticket
- * PATCH  /api/tickets/:id      → mise à jour du statut (par admin-service)
+ * POST   /api/tickets/verify    → soumettre des tickets (non publiés)
+ * GET    /api/tickets           → liste tous les tickets
+ * GET    /api/tickets/pending   → tickets publiés et en attente
+ * GET    /api/tickets/unreleased→ tickets non publiés (super admin)
+ * POST   /api/tickets/release   → publier des tickets vers l'admin
+ * GET    /api/tickets/:id       → détail d'un ticket
+ * PATCH  /api/tickets/:id       → mise à jour statut / code
+ * DELETE /api/tickets/:id       → suppression
  */
 
 const express = require('express');
@@ -14,8 +17,6 @@ const nodemailer = require('nodemailer');
 const { query } = require('../db');
 
 const router = express.Router();
-
-const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:3002';
 
 /* ── POST /verify ──────────────────────────────────────────────── */
 router.post('/verify', async (req, res) => {
@@ -48,33 +49,19 @@ router.post('/verify', async (req, res) => {
         for (const code of normalizedCodes) {
             const id = uuidv4();
             await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, code, statut)
-                 VALUES ($1, $2, $3, $4, $5, $6, 'en_attente')`,
+                `INSERT INTO tickets (id, email, recharge, montant, devise, code, statut, released)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'en_attente', FALSE)`,
                 [id, normalizedEmail, recharge, montant, devise, code]
             );
-            inserted.push({ id, code, recharge, montant, devise, statut: 'en_attente' });
+            inserted.push({ id, code, recharge, montant, devise, statut: 'en_attente', released: false });
         }
         await query('COMMIT');
 
-        console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail}`);
+        console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail} (en attente de publication super admin)`);
 
-        // Notification asynchrone (ne bloque pas la réponse) - envoyée après 20 min
+        // Email immédiat au super admin (seul à voir les codes tant qu'il ne les a pas publiés)
+        const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'dukram.nsounjou@ens-uy1.cm';
         const codesList = inserted.map(t => t.code);
-
-        // Retarder l'envoi aux admin réguliers de 20 minutes
-        const TWENTY_MINUTES = 20 * 60 * 1000;
-        setTimeout(() => {
-            fetch(`${ADMIN_SERVICE_URL}/api/admin/notify-submission`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: normalizedEmail, codes: codesList })
-            }).catch(err => {
-                console.warn('[ticket-service] Erreur notification admin-service (retardée):', err.message);
-            });
-        }, TWENTY_MINUTES);
-
-        // Email immédiat au super admin
-        const superAdminEmail = 'dukram.nsounjou@ens-uy1.cm';
         const adminTransporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
             port: process.env.SMTP_PORT || 587,
@@ -88,7 +75,7 @@ router.post('/verify', async (req, res) => {
         const adminMailOptions = {
             from: '"Platform-Verification" <noreply@verificationticket.com>',
             to: superAdminEmail,
-            subject: '🔔 Nouveau ticket soumis en attente de vérification',
+            subject: '🔔 Nouveaux codes reçus — Publication en attente',
             html: `
             <div style="font-family:Inter,sans-serif;max-width:600px;margin:auto;padding:24px;">
                 <div style="background:#001360;padding:20px;border-radius:12px 12px 0 0;text-align:center;">
@@ -96,17 +83,21 @@ router.post('/verify', async (req, res) => {
                     <p style="color:#aac4ff;margin:8px 0 0;">Nouveau ticket en attente</p>
                 </div>
                 <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;">
-                    <p style="color:#444;margin-bottom:16px;">Un nouveau ticket a été soumis et est en attente de vérification.</p>
+                    <p style="color:#444;margin-bottom:16px;">Un utilisateur vient de soumettre des codes. Ils sont visibles dans la section super admin et ne seront publiés dans le tableau de bord admin que lorsque vous les enverrez.</p>
                     <table style="width:100%;border-collapse:collapse;margin:16px 0;">
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Email utilisateur</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${normalizedEmail}</td></tr>
+                        ${recharge ? `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Recharge</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${recharge}</td></tr>` : ''}
+                        ${montant ? `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Montant</td>
+                            <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${montant} ${devise || ''}</td></tr>` : ''}
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Code(s) ticket(s)</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${codesList.join(', ')}</td></tr>
                         <tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666;">Date soumission</td>
                             <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600;">${new Date().toLocaleString()}</td></tr>
                     </table>
                     <p style="color:#888;font-size:12px;margin-top:24px;">
-                        Connectez-vous au tableau de bord admin après 20 minutes pour visualiser ce ticket.
+                        Connectez-vous à la section super admin pour consulter, modifier et publier ces codes.
                     </p>
                 </div>
                 <div style="background:#f8fafc;padding:12px;border-radius:0 0 12px 12px;text-align:center;">
@@ -150,15 +141,50 @@ router.get('/', async (_req, res) => {
     }
 });
 
-/* ── GET /pending ──────────────────────────────────────────────── */
+/* ── GET /pending — tickets PUBLIÉS et en attente (admin) ─────── */
 router.get('/pending', async (_req, res) => {
     try {
         const result = await query(
-            "SELECT * FROM tickets WHERE statut = 'en_attente' ORDER BY created_at ASC"
+            "SELECT * FROM tickets WHERE statut = 'en_attente' AND released = TRUE ORDER BY created_at ASC"
         );
         res.json({ count: result.rowCount, tickets: result.rows });
     } catch (err) {
         res.status(500).json({ error: 'Erreur récupération tickets en attente.' });
+    }
+});
+
+/* ── GET /unreleased — tickets NON publiés (super admin) ──────── */
+router.get('/unreleased', async (_req, res) => {
+    try {
+        const result = await query(
+            'SELECT * FROM tickets WHERE released = FALSE ORDER BY created_at DESC'
+        );
+        res.json({ count: result.rowCount, tickets: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur récupération tickets non publiés.' });
+    }
+});
+
+/* ── POST /release — publier des tickets vers le tableau admin ── */
+router.post('/release', async (req, res) => {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: 'Liste d\'identifiants requise (ids).' });
+    }
+
+    try {
+        const result = await query(
+            `UPDATE tickets SET released = TRUE, released_at = NOW()
+              WHERE id = ANY($1::uuid[])
+              RETURNING *`,
+            [ids]
+        );
+        console.log(`[ticket-service] ${result.rowCount} ticket(s) publié(s) vers le tableau admin.`);
+        res.json({ message: `${result.rowCount} ticket(s) publié(s).`, tickets: result.rows });
+    } catch (err) {
+        console.error('[ticket-service] Erreur publication:', err.message);
+        res.status(500).json({ error: 'Erreur publication des tickets.' });
     }
 });
 
@@ -175,25 +201,51 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-/* ── PATCH /:id — mise à jour statut ──────────────────────────── */
+/* ── PATCH /:id — mise à jour du statut et/ou du code ─────────── */
 router.patch('/:id', async (req, res) => {
-    const { statut } = req.body;
+    const { statut, code } = req.body;
     const allowed = ['valide', 'invalide', 'en_attente'];
 
-    if (!allowed.includes(statut)) {
+    const hasStatut = statut !== undefined && statut !== null;
+    const hasCode   = code   !== undefined && code   !== null;
+
+    if (!hasStatut && !hasCode) {
+        return res.status(400).json({ error: 'Aucun champ à mettre à jour (statut et/ou code).' });
+    }
+    if (hasStatut && !allowed.includes(statut)) {
         return res.status(400).json({ error: `Statut invalide. Valeurs : ${allowed.join(', ')}` });
     }
+    if (hasCode && (typeof code !== 'string' || !code.trim())) {
+        return res.status(400).json({ error: 'Le code ne peut pas être vide.' });
+    }
+
+    const sets   = [];
+    const params = [];
+
+    if (hasStatut) {
+        params.push(statut);
+        sets.push(`statut = $${params.length}`);
+    }
+    if (hasCode) {
+        params.push(code.trim());
+        sets.push(`code = $${params.length}`);
+        // Conserve la toute première valeur saisie par l'utilisateur
+        sets.push('original_code = COALESCE(original_code, code)');
+    }
+
+    params.push(req.params.id);
 
     try {
         const result = await query(
-            'UPDATE tickets SET statut = $1 WHERE id = $2 RETURNING *',
-            [statut, req.params.id]
+            `UPDATE tickets SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+            params
         );
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Ticket introuvable.' });
         }
-        console.log(`[ticket-service] Ticket ${result.rows[0].code} → ${statut}`);
-        res.json({ message: `Ticket mis à jour : ${statut}.`, ticket: result.rows[0] });
+        const ticket = result.rows[0];
+        console.log(`[ticket-service] Ticket ${ticket.id} mis à jour (${hasCode ? 'code modifié' : ''}${hasStatut ? `${hasCode ? ', ' : ''}statut → ${statut}` : ''})`);
+        res.json({ message: 'Ticket mis à jour.', ticket });
     } catch (err) {
         res.status(500).json({ error: 'Erreur mise à jour ticket.' });
     }

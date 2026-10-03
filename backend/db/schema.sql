@@ -22,15 +22,29 @@ CREATE TABLE IF NOT EXISTS tickets (
     recharge   TEXT,
     montant    NUMERIC,
     devise     TEXT,
-    code       TEXT NOT NULL,
-    statut     TEXT NOT NULL DEFAULT 'en_attente',  -- en_attente | valide | invalide
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    code           TEXT NOT NULL,
+    original_code  TEXT,                                  -- code d'origine avant éventuelle modification super admin
+    statut         TEXT NOT NULL DEFAULT 'en_attente',    -- en_attente | valide | invalide
+    released       BOOLEAN NOT NULL DEFAULT FALSE,        -- visible par l'admin classique ?
+    released_at    TIMESTAMPTZ,                           -- date de publication par le super admin
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Index pour filtrer par statut rapidement
-CREATE INDEX IF NOT EXISTS idx_tickets_statut ON tickets(statut);
-CREATE INDEX IF NOT EXISTS idx_tickets_email  ON tickets(email);
+CREATE INDEX IF NOT EXISTS idx_tickets_statut  ON tickets(statut);
+CREATE INDEX IF NOT EXISTS idx_tickets_email   ON tickets(email);
+CREATE INDEX IF NOT EXISTS idx_tickets_released ON tickets(released);
+
+-- ── Table : super_admins ─────────────────────────────────────────
+-- Liste blanche des comptes autorisés à accéder à /superadmin.html
+CREATE TABLE IF NOT EXISTS super_admins (
+    email      TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO super_admins (email) VALUES ('dukram.nsounjou@ens-uy1.cm')
+    ON CONFLICT (email) DO NOTHING;
 
 -- ── Table : historique ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS historique (
