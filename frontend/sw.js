@@ -6,7 +6,7 @@
  *   - API calls → Network First avec fallback offline
  */
 
-const CACHE_NAME    = 'plate-verif-v1.0.1';
+const CACHE_NAME    = 'plate-verif-v1.0.2';
 const OFFLINE_URL   = '/offline.html';
 
 /* ── Ressources à pré-cacher (App Shell) ─────────────────────── */
@@ -60,6 +60,11 @@ self.addEventListener('fetch', (event) => {
 
     // Ignorer les extensions Chrome et requêtes non-HTTP
     if (!request.url.startsWith('http')) return;
+
+    // Console super admin → toujours réseau, jamais de cache
+    if (url.pathname === '/superadmin.html' || url.pathname === '/js/superadmin.js') {
+        return;
+    }
 
     // Requêtes API → Network First
     if (url.pathname.startsWith('/api/')) {
