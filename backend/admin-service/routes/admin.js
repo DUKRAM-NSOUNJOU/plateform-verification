@@ -355,10 +355,60 @@ router.post('/super/login', async (req, res) => {
     }
 });
 
-/* ── GET /super/tickets — codes NON encore publiés ───────────── */
+/* ── GET /super/mode — lire le mode de validation ─────────────── */
+router.get('/super/mode', requireAuth, requireSuperAdmin, async (_req, res) => {
+    try {
+        await query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        const result = await query("SELECT value FROM app_settings WHERE key = 'manual_validation'");
+        const isManual = result.rowCount === 0 || result.rows[0].value !== 'false';
+        res.json({ manual_validation: isManual });
+    } catch (err) {
+        console.error('[admin-service] Erreur lecture mode:', err);
+        res.status(500).json({ error: 'Erreur lecture paramètre de mode.' });
+    }
+});
+
+/* ── POST /super/toggle-mode — changer le mode de validation ─── */
+router.post('/super/toggle-mode', requireAuth, requireSuperAdmin, async (req, res) => {
+    const { manual_validation } = req.body;
+    if (typeof manual_validation !== 'boolean') {
+        return res.status(400).json({ error: 'Le champ manual_validation (boolean) est requis.' });
+    }
+    try {
+        await query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await query(
+            `INSERT INTO app_settings (key, value)
+             VALUES ('manual_validation', $1)
+             ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+            [manual_validation ? 'true' : 'false']
+        );
+        console.log(`[admin-service] ⚙️ Mode validation manuelle changé à [${manual_validation}] par ${req.admin.email}`);
+        res.json({
+            message: manual_validation ? 'Validation manuelle activée.' : 'Transmission automatique activée.',
+            manual_validation
+        });
+    } catch (err) {
+        console.error('[admin-service] Erreur mise à jour mode:', err);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du mode.' });
+    }
+});
+
+/* ── GET /super/tickets — codes pour la console super admin ────── */
 router.get('/super/tickets', requireAuth, requireSuperAdmin, async (_req, res) => {
     try {
-        const data = await callTicketService('/unreleased');
+        const data = await callTicketService('/super').catch(() => callTicketService('/unreleased'));
         res.json({ count: data.tickets.length, tickets: data.tickets });
     } catch (err) {
         console.error('[admin-service] Erreur super/tickets:', err);

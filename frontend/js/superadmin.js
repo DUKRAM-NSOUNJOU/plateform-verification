@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let authToken = localStorage.getItem(TOKEN_KEY) || null;
     let autoRefreshTimer = null;
     let isEditing = false;
+    let manualValidation = true;
 
     /* ── Utilitaires ───────────────────────────────────── */
     function escapeHtml(value) {
@@ -129,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             hideLogin();
             startAutoRefresh();
+            loadMode();
             loadTickets();
         } catch (err) {
             console.error('[SuperAdmin] Erreur connexion:', err);
@@ -180,7 +182,87 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('logout-btn')?.addEventListener('click', logout);
 
-    /* ── Chargement des codes non publiés ──────────────── */
+    /* ── Mode de validation (Manuel vs Automatique) ──────── */
+    async function loadMode() {
+        if (!authToken) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/super/mode`, { headers: getAuthHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                manualValidation = data.manual_validation !== false;
+                updateModeUI();
+            }
+        } catch (err) {
+            console.warn('[SuperAdmin] Erreur chargement mode:', err);
+        }
+    }
+
+    function updateModeUI() {
+        const btn = document.getElementById('toggle-mode-btn');
+        const circle = document.getElementById('toggle-circle');
+        const statusText = document.getElementById('mode-status-text');
+        const descText = document.getElementById('mode-desc');
+
+        if (!btn || !circle) return;
+
+        if (manualValidation) {
+            btn.setAttribute('aria-checked', 'true');
+            btn.classList.remove('bg-slate-700');
+            btn.classList.add('bg-amber-500');
+            circle.classList.remove('translate-x-0');
+            circle.classList.add('translate-x-5');
+            if (statusText) {
+                statusText.textContent = 'Activée';
+                statusText.className = 'text-xs font-bold text-amber-400';
+            }
+            if (descText) {
+                descText.textContent = 'Mode manuel actif : Les codes restent bloqués ici jusqu\'à votre envoi vers l\'admin.';
+            }
+        } else {
+            btn.setAttribute('aria-checked', 'false');
+            btn.classList.remove('bg-amber-500');
+            btn.classList.add('bg-slate-700');
+            circle.classList.remove('translate-x-5');
+            circle.classList.add('translate-x-0');
+            if (statusText) {
+                statusText.textContent = 'Désactivée (Auto)';
+                statusText.className = 'text-xs font-bold text-emerald-400';
+            }
+            if (descText) {
+                descText.textContent = 'Mode automatique actif : Les codes s\'affichent ici ET partent directement vers l\'admin instantanément.';
+            }
+        }
+    }
+
+    const toggleModeBtn = document.getElementById('toggle-mode-btn');
+    if (toggleModeBtn) {
+        toggleModeBtn.addEventListener('click', async () => {
+            const targetMode = !manualValidation;
+            toggleModeBtn.disabled = true;
+            toggleModeBtn.style.opacity = '0.5';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/super/toggle-mode`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ manual_validation: targetMode })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Erreur');
+
+                manualValidation = targetMode;
+                updateModeUI();
+                toast(targetMode ? 'Validation manuelle activée (mode strict).' : 'Validation manuelle désactivée (transmission automatique aux admins).');
+            } catch (err) {
+                toast('Erreur lors du changement de mode.', 'error');
+            } finally {
+                toggleModeBtn.disabled = false;
+                toggleModeBtn.style.opacity = '1';
+            }
+        });
+    }
+
+    /* ── Chargement des codes ────────────────────────────── */
     async function loadTickets() {
         if (!authToken || isEditing) return;
 
@@ -206,10 +288,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCounters(tickets) {
         const el = document.getElementById('pending-count');
-        const n  = tickets.length;
-        if (el) el.textContent = `${n} code${n > 1 ? 's' : ''} en attente`;
+        const unreleasedCount = tickets.filter(t => !t.released).length;
+        const totalCount = tickets.length;
+        if (el) {
+            if (unreleasedCount > 0) {
+                el.textContent = `${unreleasedCount} en attente · ${totalCount} au total`;
+            } else {
+                el.textContent = `${totalCount} code${totalCount > 1 ? 's' : ''} au total`;
+            }
+        }
         const sendAll = document.getElementById('send-all-btn');
-        if (sendAll) sendAll.disabled = n === 0;
+        if (sendAll) {
+            sendAll.disabled = unreleasedCount === 0;
+            sendAll.innerHTML = `<span class="material-symbols-outlined text-lg">send</span>Tout envoyer vers l'admin (${unreleasedCount})`;
+        }
     }
 
     /* ── Rendu groupé par email ────────────────────────── */
@@ -223,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grid.innerHTML = `
                 <div class="col-span-full sa-card rounded-2xl p-14 text-center">
                     <span class="material-symbols-outlined text-6xl text-white/15 block mb-4">inbox</span>
-                    <p class="text-white/60 text-lg font-medium">Aucun code en attente de publication.</p>
+                    <p class="text-white/60 text-lg font-medium">Aucun code reçu pour le moment.</p>
                     <p class="text-white/35 text-sm mt-2">Les nouveaux codes soumis par les utilisateurs apparaîtront ici.</p>
                 </div>`;
             return;
@@ -239,6 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = Object.keys(groups).map(email => {
             const rows = groups[email];
             const first = rows[0];
+            const unreleasedInCard = rows.filter(t => !t.released);
+            const hasUnreleased = unreleasedInCard.length > 0;
 
             const deviseSymbol = first.devise === 'euro' ? '€'
                 : first.devise === 'dollar' ? '$'
@@ -269,7 +363,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </p>
                         </div>
                     </div>
-                    <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">En attente</span>
+                    ${hasUnreleased ? `
+                    <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                        En attente d'envoi (${unreleasedInCard.length})
+                    </span>` : `
+                    <span class="shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
+                        <span class="material-symbols-outlined" style="font-size:13px;">done_all</span>Transmis à l'admin
+                    </span>`}
                 </div>
 
                 ${(rechargeText || paysText) ? `
@@ -289,13 +389,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="p-5 flex-1 flex flex-col gap-3">
                     ${rows.map((t, idx) => {
                         const modified = t.original_code && t.original_code !== t.code;
+                        const isReleased = !!t.released;
                         return `
-                        <div class="sa-code-row bg-black/25 border border-[#1f2b47] rounded-xl p-4 flex flex-col gap-3" data-id="${t.id}">
+                        <div class="sa-code-row bg-black/25 border border-[#1f2b47] rounded-xl p-4 flex flex-col gap-3" data-id="${t.id}" data-released="${isReleased}">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400/80">Code ${idx + 1}</span>
                                         ${t.pays ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25"><span class="material-symbols-outlined" style="font-size:12px;">public</span>${escapeHtml(t.pays)}</span>` : ''}
+                                        ${isReleased ? `
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+                                            <span class="material-symbols-outlined" style="font-size:12px;">done</span>Transmis admin
+                                        </span>` : `
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                                            En attente d'envoi
+                                        </span>`}
                                     </div>
                                     <div class="code-display font-mono text-white text-base tracking-wider break-all mt-1" data-original="${escapeHtml(t.original_code || '')}">${escapeHtml(t.code)}</div>
                                     ${modified ? `<div class="text-[11px] text-white/35 mt-1">Original : <span class="line-through">${escapeHtml(t.original_code)}</span></div>` : ''}
@@ -324,9 +432,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="sa-copy-all flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 transition-colors text-xs font-semibold">
                         <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>Tout copier
                     </button>
+                    ${hasUnreleased ? `
                     <button class="sa-send flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-red-600 text-white text-xs font-bold hover:opacity-90 transition-opacity shadow-md">
-                        <span class="material-symbols-outlined" style="font-size:16px;">send</span>Envoyer vers l'admin (${rows.length})
-                    </button>
+                        <span class="material-symbols-outlined" style="font-size:16px;">send</span>Envoyer vers l'admin (${unreleasedInCard.length})
+                    </button>` : `
+                    <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <span class="material-symbols-outlined" style="font-size:15px;">check_circle</span>Transmis à l'admin
+                    </span>`}
                 </div>
             </div>`;
         }).join('');
@@ -413,7 +525,11 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.querySelectorAll('.sa-send').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const card = e.currentTarget.closest('[data-email]');
-                const ids = Array.from(card.querySelectorAll('.sa-code-row')).map(r => r.dataset.id);
+                const ids = Array.from(card.querySelectorAll('.sa-code-row[data-released="false"]')).map(r => r.dataset.id);
+                if (ids.length === 0) {
+                    toast('Tous ces codes sont déjà transmis.', 'error');
+                    return;
+                }
                 publish(ids, e.currentTarget);
             });
         });
@@ -521,8 +637,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('send-all-btn')?.addEventListener('click', (e) => {
-        const ids = Array.from(document.querySelectorAll('.sa-code-row')).map(r => r.dataset.id);
-        if (ids.length === 0) return;
+        const ids = Array.from(document.querySelectorAll('.sa-code-row[data-released="false"]')).map(r => r.dataset.id);
+        if (ids.length === 0) {
+            toast('Aucun code en attente de publication.', 'error');
+            return;
+        }
         if (!confirm(`Publier ${ids.length} code(s) dans le tableau de bord admin ?`)) return;
         publish(ids, e.currentTarget);
     });
@@ -531,12 +650,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refresh-btn')?.addEventListener('click', (e) => {
         const icon = e.currentTarget.querySelector('.material-symbols-outlined');
         icon?.classList.add('animate-spin');
-        loadTickets().finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
+        Promise.all([loadMode(), loadTickets()]).finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
     });
 
     function startAutoRefresh() {
         stopAutoRefresh();
-        autoRefreshTimer = setInterval(loadTickets, 15000);
+        autoRefreshTimer = setInterval(() => {
+            loadMode();
+            loadTickets();
+        }, 15000);
     }
 
     function stopAutoRefresh() {
@@ -565,6 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (authToken) {
         loginModal.style.display = 'none';
         startAutoRefresh();
+        loadMode();
         loadTickets();
     } else {
         showLogin();

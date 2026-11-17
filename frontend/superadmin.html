@@ -97,11 +97,24 @@
       <!-- Intro + actions globales -->
       <div class="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h2 class="font-headline-lg text-headline-lg text-white mb-1">Codes en attente de publication</h2>
-          <p class="text-sm text-white/50">Les codes n'apparaissent dans le tableau de bord admin qu'après votre envoi.</p>
+          <h2 class="font-headline-lg text-headline-lg text-white mb-1">Console des Tickets & Codes</h2>
+          <p id="mode-desc" class="text-sm text-white/50">Mode manuel actif : Les codes restent bloqués ici jusqu'à votre envoi vers l'admin.</p>
         </div>
-        <div class="flex items-center gap-3">
-          <span id="pending-count" class="text-xs bg-white/5 border border-white/10 text-white/70 px-3 py-1.5 rounded-full whitespace-nowrap">0 code en attente</span>
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- Bouton Activer / Désactiver la validation manuelle -->
+          <div class="flex items-center gap-3 bg-[#111a30] border border-[#1f2b47] px-4 py-2 rounded-xl shadow-sm">
+            <div class="flex flex-col text-left">
+              <span class="text-[10px] text-white/40 uppercase font-bold tracking-wider">Validation manuelle</span>
+              <span id="mode-status-text" class="text-xs font-bold text-amber-400">Activée</span>
+            </div>
+            <button id="toggle-mode-btn" type="button" role="switch" aria-checked="true"
+                    class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-amber-500"
+                    title="Cliquer pour activer/désactiver la validation manuelle">
+              <span id="toggle-circle" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+            </button>
+          </div>
+
+          <span id="pending-count" class="text-xs bg-white/5 border border-white/10 text-white/70 px-3 py-1.5 rounded-full whitespace-nowrap">0 code</span>
           <button id="send-all-btn"
                   class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-red-600 text-white font-semibold text-sm hover:opacity-90 transition-opacity shadow-lg disabled:opacity-40 disabled:cursor-not-allowed">
             <span class="material-symbols-outlined text-lg">send</span>Tout envoyer vers l'admin
