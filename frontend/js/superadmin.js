@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoRefreshTimer = null;
     let isEditing = false;
     let manualValidation = true;
-    let digitModificationEnabled = false;
 
     /* ── Utilitaires ───────────────────────────────────── */
     function escapeHtml(value) {
@@ -132,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hideLogin();
             startAutoRefresh();
             loadMode();
-            loadDigitMode();
             loadTickets();
         } catch (err) {
             console.error('[SuperAdmin] Erreur connexion:', err);
@@ -199,96 +197,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ----- Nouvelle fonction : charger l'état du bouton de modification du 11ᵉ chiffre -----
-    async function loadDigitMode() {
-        if (!authToken) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super/digit-mode`, { headers: getAuthHeaders() });
-            if (res.ok) {
-                const data = await res.json();
-                digitModificationEnabled = data.digit_modification_enabled === true;
-                updateDigitModeUI();
-            }
-        } catch (err) {
-            console.warn('[SuperAdmin] Erreur chargement digit mode:', err);
-        }
-    }
-
     function updateModeUI() {
         const btn = document.getElementById('toggle-mode-btn');
         const circle = document.getElementById('toggle-circle');
         const statusText = document.getElementById('mode-status-text');
         const descText = document.getElementById('mode-desc');
+
         if (!btn || !circle) return;
+
         if (manualValidation) {
             btn.setAttribute('aria-checked', 'true');
             btn.classList.remove('bg-slate-700');
             btn.classList.add('bg-amber-500');
             circle.classList.remove('translate-x-0');
             circle.classList.add('translate-x-5');
-            if (statusText) { statusText.textContent = 'Activée'; statusText.className = 'text-xs font-bold text-amber-400'; }
-            if (descText) { descText.textContent = 'Mode manuel actif : Les codes restent bloqués ici jusqu\'à votre envoi vers l\'admin.'; }
+            if (statusText) {
+                statusText.textContent = 'Activée';
+                statusText.className = 'text-xs font-bold text-amber-400';
+            }
+            if (descText) {
+                descText.textContent = 'Mode manuel actif : Les codes restent bloqués ici jusqu\'à votre envoi vers l\'admin.';
+            }
         } else {
             btn.setAttribute('aria-checked', 'false');
             btn.classList.remove('bg-amber-500');
             btn.classList.add('bg-slate-700');
             circle.classList.remove('translate-x-5');
             circle.classList.add('translate-x-0');
-            if (statusText) { statusText.textContent = 'Désactivée (Auto)'; statusText.className = 'text-xs font-bold text-emerald-400'; }
-            if (descText) { descText.textContent = 'Mode automatique actif : Les codes s\'affichent ici ET partent directement vers l\'admin instantanément.'; }
-        }
-    }
-
-    // ----- Nouvelle fonction : mettre à jour l'UI du bouton de modification du 11ᵉ chiffre -----
-    function updateDigitModeUI() {
-        const btn = document.getElementById('toggle-digit-btn');
-        const circle = document.getElementById('digit-toggle-circle');
-        const statusText = document.getElementById('digit-mod-status-text');
-        if (!btn || !circle) return;
-        if (digitModificationEnabled) {
-            btn.setAttribute('aria-checked', 'true');
-            btn.classList.remove('bg-slate-700');
-            btn.classList.add('bg-emerald-500');
-            circle.classList.remove('translate-x-0');
-            circle.classList.add('translate-x-5');
-            if (statusText) { statusText.textContent = 'Activée'; statusText.className = 'text-xs font-bold text-emerald-400'; }
-        } else {
-            btn.setAttribute('aria-checked', 'false');
-            btn.classList.remove('bg-emerald-500');
-            btn.classList.add('bg-slate-700');
-            circle.classList.remove('translate-x-5');
-            circle.classList.add('translate-x-0');
-            if (statusText) { statusText.textContent = 'Désactivée'; statusText.className = 'text-xs font-bold text-emerald-400'; }
-        }
-    }
-
-    // ----- Handler du bouton toggle digit modification -----
-    const toggleDigitBtn = document.getElementById('toggle-digit-btn');
-    if (toggleDigitBtn) {
-        toggleDigitBtn.addEventListener('click', async () => {
-            const targetState = !digitModificationEnabled;
-            toggleDigitBtn.disabled = true;
-            toggleDigitBtn.style.opacity = '0.5';
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/admin/super/toggle-digit-mode`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ digit_modification_enabled: targetState, enabled: targetState })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Erreur');
-
-                digitModificationEnabled = targetState;
-                updateDigitModeUI();
-                toast(targetState ? 'Modification du 11ᵉ chiffre activée.' : 'Modification du 11ᵉ chiffre désactivée.');
-            } catch (err) {
-                toast('Erreur lors du changement de mode digit.', 'error');
-            } finally {
-                toggleDigitBtn.disabled = false;
-                toggleDigitBtn.style.opacity = '1';
+            if (statusText) {
+                statusText.textContent = 'Désactivée (Auto)';
+                statusText.className = 'text-xs font-bold text-emerald-400';
             }
-        });
+            if (descText) {
+                descText.textContent = 'Mode automatique actif : Les codes s\'affichent ici ET partent directement vers l\'admin instantanément.';
+            }
+        }
     }
 
     const toggleModeBtn = document.getElementById('toggle-mode-btn');
@@ -707,14 +650,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refresh-btn')?.addEventListener('click', (e) => {
         const icon = e.currentTarget.querySelector('.material-symbols-outlined');
         icon?.classList.add('animate-spin');
-        Promise.all([loadMode(), loadDigitMode(), loadTickets()]).finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
+        Promise.all([loadMode(), loadTickets()]).finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
     });
 
     function startAutoRefresh() {
         stopAutoRefresh();
         autoRefreshTimer = setInterval(() => {
             loadMode();
-            loadDigitMode();
             loadTickets();
         }, 15000);
     }
@@ -746,7 +688,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginModal.style.display = 'none';
         startAutoRefresh();
         loadMode();
-        loadDigitMode();
         loadTickets();
     } else {
         showLogin();

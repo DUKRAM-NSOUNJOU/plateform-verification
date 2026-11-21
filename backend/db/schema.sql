@@ -93,8 +93,6 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 -- Mode par défaut : validation manuelle activée (true)
 INSERT INTO app_settings (key, value)
-VALUES ('digit_modification_enabled', 'false')
-ON CONFLICT (key) DO NOTHING;
 VALUES ('manual_validation', 'true')
 ON CONFLICT (key) DO NOTHING;
 
