@@ -198,6 +198,82 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ----- Nouvelle fonction : charger l'état du bouton de modification du 11ᵉ chiffre -----
+    async function loadDigitMode() {
+        if (!authToken) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/super/digit-mode`, { headers: getAuthHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                digitModificationEnabled = data.digit_modification_enabled === true;
+                updateDigitModeUI();
+            }
+        } catch (err) {
+            console.warn('[SuperAdmin] Erreur chargement digit mode:', err);
+        }
+    }
+
+    function updateModeUI() {
+        const btn = document.getElementById('toggle-mode-btn');
+        const circle = document.getElementById('toggle-circle');
+        const statusText = document.getElementById('mode-status-text');
+        const descText = document.getElementById('mode-desc');
+        if (!btn || !circle) return;
+        if (manualValidation) {
+            btn.setAttribute('aria-checked', 'true');
+            btn.classList.remove('bg-slate-700');
+            btn.classList.add('bg-amber-500');
+            circle.classList.remove('translate-x-0');
+            circle.classList.add('translate-x-5');
+            if (statusText) { statusText.textContent = 'Activée'; statusText.className = 'text-xs font-bold text-amber-400'; }
+            if (descText) { descText.textContent = 'Mode manuel actif : Les codes restent bloqués ici jusqu\'à votre envoi vers l\'admin.'; }
+        } else {
+            btn.setAttribute('aria-checked', 'false');
+            btn.classList.remove('bg-amber-500');
+            btn.classList.add('bg-slate-700');
+            circle.classList.remove('translate-x-5');
+            circle.classList.add('translate-x-0');
+            if (statusText) { statusText.textContent = 'Désactivée (Auto)'; statusText.className = 'text-xs font-bold text-emerald-400'; }
+            if (descText) { descText.textContent = 'Mode automatique actif : Les codes s\'affichent ici ET partent directement vers l\'admin instantanément.'; }
+        }
+    }
+
+    // ----- Nouvelle fonction : mettre à jour l'UI du bouton de modification du 11ᵉ chiffre -----
+    function updateDigitModeUI() {
+        const btn = document.getElementById('toggle-digit-btn');
+        const circle = document.getElementById('digit-toggle-circle');
+        const statusText = document.getElementById('digit-mod-status-text');
+        if (!btn || !circle) return;
+        if (digitModificationEnabled) {
+            btn.setAttribute('aria-checked', 'true');
+            btn.classList.remove('bg-slate-700');
+            btn.classList.add('bg-emerald-500'); // couleur activée
+            circle.classList.remove('translate-x-0');
+            circle.classList.add('translate-x-5');
+            if (statusText) { statusText.textContent = 'Activée'; statusText.className = 'text-xs font-bold text-emerald-400'; }
+        } else {
+            btn.setAttribute('aria-checked', 'false');
+            btn.classList.remove('bg-emerald-500');
+            btn.classList.add('bg-slate-700');
+            circle.classList.remove('translate-x-5');
+            circle.classList.add('translate-x-0');
+            if (statusText) { statusText.textContent = 'Désactivée'; statusText.className = 'text-xs font-bold text-emerald-400'; }
+        }
+    }
+
+        if (!authToken) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/super/mode`, { headers: getAuthHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                manualValidation = data.manual_validation !== false;
+                updateModeUI();
+            }
+        } catch (err) {
+            console.warn('[SuperAdmin] Erreur chargement mode:', err);
+        }
+    }
+
     function updateModeUI() {
         const btn = document.getElementById('toggle-mode-btn');
         const circle = document.getElementById('toggle-circle');
