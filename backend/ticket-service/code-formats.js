@@ -118,7 +118,8 @@
 
         const targetPos = positions[Math.min(10, positions.length - 1)];
         const current = raw[targetPos];
-        const replacement = current === '5' ? '4' : '5';
+        if (!/\d/.test(current)) return raw;
+        const replacement = String((Number(current) + 1) % 10);
 
         return raw.slice(0, targetPos) + replacement + raw.slice(targetPos + 1);
     }

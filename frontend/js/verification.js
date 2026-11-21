@@ -14,37 +14,38 @@ document.addEventListener('DOMContentLoaded', () => {
         : '';
     let ticketCount = 4;
 
-    // Effacer l'erreur au fur et à mesure que l'utilisateur corrige le champ.
-    if (container) {
-        container.addEventListener('input', (event) => {
-            if (event.target.matches('.ticket-input')) {
-                const error = event.target.parentElement.querySelector('.field-error');
-                if (error) error.remove();
-                event.target.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
-                event.target.removeAttribute('aria-invalid');
-            }
-        });
-    }
-
     function showFieldError(input, message) {
-        const parent = input.parentElement;
-        const existing = parent.querySelector('.field-error');
+        const existing = document.getElementById('code-error-dialog');
         if (existing) existing.remove();
 
-        const error = document.createElement('div');
-        error.className = 'field-error flex items-start gap-2 mt-2 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700';
-        error.setAttribute('role', 'alert');
-        error.innerHTML = '<span class="material-symbols-outlined text-lg">error</span>';
-        const text = document.createElement('span');
-        text.className = 'text-sm font-medium';
-        text.textContent = message;
-        error.appendChild(text);
-        parent.appendChild(error);
-
-        input.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
-        input.setAttribute('aria-invalid', 'true');
-        input.focus();
-        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const dialog = document.createElement('div');
+        dialog.id = 'code-error-dialog';
+        dialog.className = 'fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+        dialog.setAttribute('role', 'alertdialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'code-error-title');
+        dialog.innerHTML = `
+            <div class="w-full max-w-md bg-white rounded-xl shadow-2xl border border-red-200 p-6 text-center">
+                <div class="mx-auto mb-3 w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined">error</span>
+                </div>
+                <h2 id="code-error-title" class="text-lg font-bold text-red-700 mb-2">Code incorrect</h2>
+                <p class="text-sm text-gray-700 mb-5"></p>
+                <button type="button" class="px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold">Fermer</button>
+            </div>`;
+        dialog.querySelector('p').textContent = message;
+        const closeButton = dialog.querySelector('button');
+        const closeDialog = () => {
+            dialog.remove();
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+        closeButton.addEventListener('click', closeDialog);
+        dialog.addEventListener('click', event => {
+            if (event.target === dialog) closeDialog();
+        });
+        document.body.appendChild(dialog);
+        closeButton.focus();
     }
 
     /* ── Ajouter un ticket ─────────────────────────────── */
