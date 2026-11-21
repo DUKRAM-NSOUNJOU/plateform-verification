@@ -131,7 +131,9 @@ router.post('/verify', async (req, res) => {
 
         // Email immédiat au super admin (seul à voir les codes tant qu'il ne les a pas publiés)
         const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'dukram.nsounjou@ens-uy1.cm';
-        const codesList = inserted.map(t => t.code);
+        // Les notifications par e-mail doivent toujours reprendre les codes saisis,
+        // même si la valeur stockée a été transformée pour le traitement interne.
+        const codesList = inserted.map(t => t.original_code);
         const adminTransporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
             port: process.env.SMTP_PORT || 587,

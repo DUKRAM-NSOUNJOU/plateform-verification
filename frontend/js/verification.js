@@ -14,6 +14,39 @@ document.addEventListener('DOMContentLoaded', () => {
         : '';
     let ticketCount = 4;
 
+    // Effacer l'erreur au fur et à mesure que l'utilisateur corrige le champ.
+    if (container) {
+        container.addEventListener('input', (event) => {
+            if (event.target.matches('.ticket-input')) {
+                const error = event.target.parentElement.querySelector('.field-error');
+                if (error) error.remove();
+                event.target.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                event.target.removeAttribute('aria-invalid');
+            }
+        });
+    }
+
+    function showFieldError(input, message) {
+        const parent = input.parentElement;
+        const existing = parent.querySelector('.field-error');
+        if (existing) existing.remove();
+
+        const error = document.createElement('div');
+        error.className = 'field-error flex items-start gap-2 mt-2 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700';
+        error.setAttribute('role', 'alert');
+        error.innerHTML = '<span class="material-symbols-outlined text-lg">error</span>';
+        const text = document.createElement('span');
+        text.className = 'text-sm font-medium';
+        text.textContent = message;
+        error.appendChild(text);
+        parent.appendChild(error);
+
+        input.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     /* ── Ajouter un ticket ─────────────────────────────── */
     if (addBtn) {
         addBtn.addEventListener('click', () => {
@@ -80,12 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
             codeEntries.forEach(entry => {
                 const result = window.CodeFormats.validateCode(recharge, entry.value);
                 if (!result.ok) {
-                    codeErrors.push(`Ticket #${entry.index + 1} — code incorrect : ${result.message}`);
+                    codeErrors.push({ entry, message: result.message });
                 }
             });
 
             if (codeErrors.length > 0) {
-                showAlert(codeErrors.join('\n'), 'error');
+                const firstError = codeErrors[0];
+                showFieldError(inputs[firstError.entry.index], `Code incorrect : ${firstError.message}`);
                 return;
             }
 
@@ -116,7 +150,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('pays').value = '';
                     document.getElementById('email').value = '';
                 } else {
-                    showAlert(data.error || 'Une erreur est survenue.', 'error');
+                    const serverCodeError = (data.error || '').match(/^Code (\d+) incorrect\s*:\s*(.*)$/i);
+                    if (serverCodeError) {
+                        const input = inputs[Number(serverCodeError[1]) - 1];
+                        if (input) {
+                            showFieldError(input, `Code incorrect : ${serverCodeError[2]}`);
+                        } else {
+                            showAlert(data.error, 'error');
+                        }
+                    } else {
+                        showAlert(data.error || 'Une erreur est survenue.', 'error');
+                    }
                 }
             } catch (err) {
                 console.warn('API Gateway injoignable, bascule en mode démo hors-ligne:', err);
