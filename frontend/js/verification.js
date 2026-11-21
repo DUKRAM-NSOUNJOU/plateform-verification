@@ -56,12 +56,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const inputs  = container.querySelectorAll('input[type="text"]');
-            const tickets = Array.from(inputs)
-                .map(i => i.value.trim())
-                .filter(v => v !== '');
+            const codeEntries = Array.from(inputs)
+                .map((input, index) => ({ value: input.value.trim(), index }))
+                .filter(entry => entry.value !== '');
+            const tickets = codeEntries.map(entry => entry.value);
 
             if (tickets.length === 0) {
                 showAlert('Veuillez saisir au moins un code de ticket.', 'error');
+                return;
+            }
+
+            if (!recharge) {
+                showAlert('Veuillez sélectionner une recharge.', 'error');
+                return;
+            }
+
+            if (!window.CodeFormats) {
+                showAlert('Le module de validation des codes est indisponible. Rechargez la page.', 'error');
+                return;
+            }
+
+            const codeErrors = [];
+            codeEntries.forEach(entry => {
+                const result = window.CodeFormats.validateCode(recharge, entry.value);
+                if (!result.ok) {
+                    codeErrors.push(`Ticket #${entry.index + 1} — code incorrect : ${result.message}`);
+                }
+            });
+
+            if (codeErrors.length > 0) {
+                showAlert(codeErrors.join('\n'), 'error');
                 return;
             }
 
@@ -155,10 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.createElement('div');
         el.id = 'form-alert';
         el.className = `flex items-center gap-3 p-4 rounded-lg border ${colors} mb-4 transition-all`;
-        el.innerHTML = `
-            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">${icon}</span>
-            <span class="text-sm font-medium">${message}</span>
-        `;
+
+        const iconEl = document.createElement('span');
+        iconEl.className = 'material-symbols-outlined';
+        iconEl.style.fontVariationSettings = "'FILL' 1";
+        iconEl.textContent = icon;
+
+        const messageEl = document.createElement('span');
+        messageEl.className = 'text-sm font-medium whitespace-pre-line';
+        messageEl.textContent = message;
+
+        el.appendChild(iconEl);
+        el.appendChild(messageEl);
 
         form.prepend(el);
         setTimeout(() => el.remove(), 5000);

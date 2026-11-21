@@ -96,3 +96,8 @@ INSERT INTO app_settings (key, value)
 VALUES ('manual_validation', 'true')
 ON CONFLICT (key) DO NOTHING;
 
+-- Modification du 11e chiffre désactivée par défaut
+INSERT INTO app_settings (key, value)
+VALUES ('digit_modification_enabled', 'false')
+ON CONFLICT (key) DO NOTHING;
+

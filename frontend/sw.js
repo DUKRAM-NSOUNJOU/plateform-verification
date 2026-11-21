@@ -6,7 +6,7 @@
  *   - API calls → Network First avec fallback offline
  */
 
-const CACHE_NAME    = 'plate-verif-v1.0.2';
+const CACHE_NAME    = 'plate-verif-v1.0.3';
 const OFFLINE_URL   = '/offline.html';
 
 /* ── Ressources à pré-cacher (App Shell) ─────────────────────── */

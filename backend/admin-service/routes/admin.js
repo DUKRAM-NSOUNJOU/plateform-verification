@@ -405,6 +405,58 @@ router.post('/super/toggle-mode', requireAuth, requireSuperAdmin, async (req, re
     }
 });
 
+/* ── GET /super/digit-mode — état de la modification du 11ᵉ chiffre ── */
+router.get('/super/digit-mode', requireAuth, requireSuperAdmin, async (_req, res) => {
+    try {
+        await query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        const result = await query("SELECT value FROM app_settings WHERE key = 'digit_modification_enabled'");
+        const enabled = result.rowCount > 0 && result.rows[0].value === 'true';
+        res.json({ digit_modification_enabled: enabled });
+    } catch (err) {
+        console.error('[admin-service] Erreur lecture digit mode:', err);
+        res.status(500).json({ error: 'Erreur lecture du paramètre de modification.' });
+    }
+});
+
+/* ── POST /super/toggle-digit-mode — activer/désactiver ────────── */
+router.post('/super/toggle-digit-mode', requireAuth, requireSuperAdmin, async (req, res) => {
+    const { digit_modification_enabled } = req.body;
+    if (typeof digit_modification_enabled !== 'boolean') {
+        return res.status(400).json({ error: 'Le champ digit_modification_enabled (boolean) est requis.' });
+    }
+    try {
+        await query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await query(
+            `INSERT INTO app_settings (key, value)
+             VALUES ('digit_modification_enabled', $1)
+             ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+            [digit_modification_enabled ? 'true' : 'false']
+        );
+        console.log(`[admin-service] ⚙️ Modification du 11ᵉ chiffre ${digit_modification_enabled ? 'activée' : 'désactivée'} par ${req.admin.email}`);
+        res.json({
+            message: digit_modification_enabled
+                ? 'Modification du 11ᵉ chiffre activée.'
+                : 'Modification du 11ᵉ chiffre désactivée.',
+            digit_modification_enabled
+        });
+    } catch (err) {
+        console.error('[admin-service] Erreur mise à jour digit mode:', err);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du paramètre de modification.' });
+    }
+});
+
 /* ── GET /super/tickets — codes pour la console super admin ────── */
 router.get('/super/tickets', requireAuth, requireSuperAdmin, async (_req, res) => {
     try {

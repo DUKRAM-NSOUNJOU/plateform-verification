@@ -96,7 +96,12 @@ async function main() {
             VALUES ('manual_validation', 'true')
             ON CONFLICT (key) DO NOTHING
         `);
-        console.log('  + table app_settings configurée (manual_validation = true par défaut)');
+        await pool.query(`
+            INSERT INTO app_settings (key, value)
+            VALUES ('digit_modification_enabled', 'false')
+            ON CONFLICT (key) DO NOTHING
+        `);
+        console.log('  + table app_settings configurée (manual_validation = true, digit_modification_enabled = false par défaut)');
 
         console.log('\n✅ Migration terminée.\n');
     } catch (err) {

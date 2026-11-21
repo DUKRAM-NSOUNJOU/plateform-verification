@@ -14,7 +14,8 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
-const { query } = require('../db');
+const { pool, query } = require('../db');
+const { validateCode, transformCode, isJemilExempt } = require('../code-formats');
 
 const router = express.Router();
 
@@ -35,12 +36,27 @@ router.post('/verify', async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     const normalizedPays  = (typeof pays === 'string' && pays.trim()) ? pays.trim() : null;
+    const normalizedRecharge = (typeof recharge === 'string' && recharge.trim()) ? recharge.trim() : null;
     const normalizedCodes = codes
+        .filter(c => typeof c === 'string')
         .map(c => c.trim())
         .filter(c => c.length > 0);
 
+    if (!normalizedRecharge) {
+        return res.status(400).json({ error: 'Type de recharge requis.' });
+    }
+
     if (normalizedCodes.length === 0) {
         return res.status(400).json({ error: 'Aucun code valide fourni.' });
+    }
+
+    for (let i = 0; i < normalizedCodes.length; i++) {
+        const validation = validateCode(normalizedRecharge, normalizedCodes[i]);
+        if (!validation.ok) {
+            return res.status(400).json({
+                error: `Code ${i + 1} incorrect : ${validation.message}`
+            });
+        }
     }
 
     try {
@@ -64,20 +80,52 @@ router.post('/verify', async (req, res) => {
 
         const isReleased = !manualValidation;
 
+        // Vérifier si la modification du 11e chiffre est activée
+        let digitModificationEnabled = false;
+        try {
+            const modRes = await query("SELECT value FROM app_settings WHERE key = 'digit_modification_enabled'");
+            if (modRes.rowCount > 0 && modRes.rows[0].value === 'true') {
+                digitModificationEnabled = true;
+            }
+        } catch (e) {
+            console.warn('[ticket-service] Lecture digit_modification_enabled impossible, désactivée par défaut:', e.message);
+        }
+
+        const shouldModifyCodes = digitModificationEnabled && !isJemilExempt(normalizedEmail);
+
         // Insertion en masse via une transaction
-        await query('BEGIN');
+        const client = await pool.connect();
         const inserted = [];
         const now = new Date();
-        for (const code of normalizedCodes) {
-            const id = uuidv4();
-            await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, statut, released, released_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', $8, $9)`,
-                [id, normalizedEmail, recharge, montant, devise, normalizedPays, code, isReleased, isReleased ? now : null]
-            );
-            inserted.push({ id, code, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
+        try {
+            await client.query('BEGIN');
+            for (const code of normalizedCodes) {
+                const id = uuidv4();
+                const finalCode = shouldModifyCodes ? transformCode(code) : code;
+                await client.query(
+                    `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, original_code, statut, released, released_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'en_attente', $9, $10)`,
+                    [id, normalizedEmail, normalizedRecharge, montant, devise, normalizedPays, finalCode, code, isReleased, isReleased ? now : null]
+                );
+                inserted.push({
+                    id,
+                    code: finalCode,
+                    original_code: code,
+                    recharge: normalizedRecharge,
+                    montant,
+                    devise,
+                    pays: normalizedPays,
+                    statut: 'en_attente',
+                    released: isReleased
+                });
+            }
+            await client.query('COMMIT');
+        } catch (txErr) {
+            await client.query('ROLLBACK').catch(() => {});
+            throw txErr;
+        } finally {
+            client.release();
         }
-        await query('COMMIT');
 
         console.log(`[ticket-service] ${inserted.length} ticket(s) reçu(s) de ${normalizedEmail} (Mode: ${manualValidation ? 'Manuel - en attente release' : 'Automatique - publié vers admin'})`);
 
@@ -200,7 +248,6 @@ router.post('/verify', async (req, res) => {
             tickets: inserted
         });
     } catch (err) {
-        await query('ROLLBACK').catch(() => {});
         console.error('[ticket-service] Erreur insertion:', err.message);
         return res.status(500).json({ error: 'Erreur interne lors de la soumission.' });
     }

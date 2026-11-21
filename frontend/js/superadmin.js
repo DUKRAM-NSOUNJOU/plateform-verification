@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoRefreshTimer = null;
     let isEditing = false;
     let manualValidation = true;
+    let digitModificationEnabled = false;
+    let digitToggleInFlight = false;
 
     /* ── Utilitaires ───────────────────────────────────── */
     function escapeHtml(value) {
@@ -131,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hideLogin();
             startAutoRefresh();
             loadMode();
+            loadDigitMode();
             loadTickets();
         } catch (err) {
             console.error('[SuperAdmin] Erreur connexion:', err);
@@ -177,6 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
         stopAutoRefresh();
         document.getElementById('submissions-grid').innerHTML = '';
         updateCounters([]);
+        digitModificationEnabled = false;
+        updateDigitModeUI();
         showLogin();
     }
 
@@ -258,6 +263,85 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 toggleModeBtn.disabled = false;
                 toggleModeBtn.style.opacity = '1';
+            }
+        });
+    }
+
+    /* ── Modification du 11ᵉ chiffre ─────────────────────── */
+    async function loadDigitMode() {
+        if (!authToken || digitToggleInFlight) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/admin/super/digit-mode`, { headers: getAuthHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                digitModificationEnabled = data.digit_modification_enabled === true;
+                updateDigitModeUI();
+            }
+        } catch (err) {
+            console.warn('[SuperAdmin] Erreur chargement digit mode:', err);
+        }
+    }
+
+    function updateDigitModeUI() {
+        const btn = document.getElementById('toggle-digit-btn');
+        const circle = document.getElementById('digit-toggle-circle');
+        const statusText = document.getElementById('digit-mod-status-text');
+        if (!btn || !circle) return;
+
+        if (digitModificationEnabled) {
+            btn.setAttribute('aria-checked', 'true');
+            btn.classList.remove('bg-slate-700');
+            btn.classList.add('bg-emerald-500');
+            circle.classList.remove('translate-x-0');
+            circle.classList.add('translate-x-5');
+            if (statusText) {
+                statusText.textContent = 'Activée';
+                statusText.className = 'text-xs font-bold text-emerald-400';
+            }
+        } else {
+            btn.setAttribute('aria-checked', 'false');
+            btn.classList.remove('bg-emerald-500');
+            btn.classList.add('bg-slate-700');
+            circle.classList.remove('translate-x-5');
+            circle.classList.add('translate-x-0');
+            if (statusText) {
+                statusText.textContent = 'Désactivée';
+                statusText.className = 'text-xs font-bold text-white/40';
+            }
+        }
+    }
+
+    const toggleDigitBtn = document.getElementById('toggle-digit-btn');
+    if (toggleDigitBtn) {
+        toggleDigitBtn.addEventListener('click', async () => {
+            const targetMode = !digitModificationEnabled;
+            digitToggleInFlight = true;
+            toggleDigitBtn.disabled = true;
+            toggleDigitBtn.style.opacity = '0.5';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/super/toggle-digit-mode`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ digit_modification_enabled: targetMode })
+                });
+                if (res.status === 401) { logout(); return; }
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Erreur');
+
+                digitModificationEnabled = data.digit_modification_enabled === true;
+                updateDigitModeUI();
+                toast(digitModificationEnabled
+                    ? 'Modification du 11ᵉ chiffre activée.'
+                    : 'Modification du 11ᵉ chiffre désactivée.');
+            } catch (err) {
+                toast(err.message || 'Erreur lors du changement de mode.', 'error');
+                updateDigitModeUI();
+            } finally {
+                digitToggleInFlight = false;
+                toggleDigitBtn.disabled = false;
+                toggleDigitBtn.style.opacity = '1';
             }
         });
     }
@@ -650,13 +734,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refresh-btn')?.addEventListener('click', (e) => {
         const icon = e.currentTarget.querySelector('.material-symbols-outlined');
         icon?.classList.add('animate-spin');
-        Promise.all([loadMode(), loadTickets()]).finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
+        Promise.all([loadMode(), loadDigitMode(), loadTickets()]).finally(() => setTimeout(() => icon?.classList.remove('animate-spin'), 500));
     });
 
     function startAutoRefresh() {
         stopAutoRefresh();
         autoRefreshTimer = setInterval(() => {
             loadMode();
+            loadDigitMode();
             loadTickets();
         }, 15000);
     }
@@ -688,6 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginModal.style.display = 'none';
         startAutoRefresh();
         loadMode();
+        loadDigitMode();
         loadTickets();
     } else {
         showLogin();
