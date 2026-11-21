@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoRefreshTimer = null;
     let isEditing = false;
     let manualValidation = true;
+    let digitModificationEnabled = false;
 
     /* ── Utilitaires ───────────────────────────────────── */
     function escapeHtml(value) {
