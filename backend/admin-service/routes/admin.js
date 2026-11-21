@@ -232,8 +232,9 @@ router.get('/super/digit-mode', requireSuperAdmin, async (req, res) => {
     }
 });
 router.post('/super/toggle-digit-mode', requireSuperAdmin, async (req, res) => {
-    const { digit_modification_enabled } = req.body;
-    if (typeof digit_modification_enabled !== 'boolean') return res.status(400).json({ error: 'Valeur booléenne attendue.' });
+    const rawVal = req.body.digit_modification_enabled !== undefined ? req.body.digit_modification_enabled : req.body.enabled;
+    if (typeof rawVal !== 'boolean') return res.status(400).json({ error: 'Valeur booléenne attendue.' });
+    const digit_modification_enabled = rawVal;
     try {
         await query(`INSERT INTO app_settings (key, value) VALUES ('digit_modification_enabled', $1::text)
                      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [digit_modification_enabled ? 'true' : 'false']);
